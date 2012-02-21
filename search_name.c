@@ -116,10 +116,10 @@ search_name_list_pic_cb(Search_Result *sr, Evas_Object *obj, const char *part)
 }
 
 void
-search_name_data(Search_Name *sn, Ecore_Con_Event_Url_Data *ev)
+search_name_parser(Search_Name *sn)
 {
    if (sn->done) return;
-   sn->provider.data_cb(sn, ev);
+   sn->provider.data_cb(sn);
 }
 
 void

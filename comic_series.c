@@ -49,7 +49,7 @@ comic_series_create(Search_Result *sr)
 }
 
 void
-comic_series_data(Comic_Series *cs, Ecore_Con_Event_Url_Data *ev)
+comic_series_parser(Comic_Series *cs)
 {
-   cs->provider.data_cb(cs, ev);
+   cs->provider.data_cb(cs);
 }

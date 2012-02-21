@@ -57,7 +57,7 @@ typedef struct Comic_Series Comic_Series;
 typedef struct Search_Result Search_Result;
 typedef struct Comic_Chapter Comic_Chapter;
 typedef struct Comic_Provider Comic_Provider;
-typedef void (*Provider_Data_Cb)(void *data, Ecore_Con_Event_Url_Data *);
+typedef void (*Provider_Data_Cb)(void *data);
 typedef void (*Provider_Init_Cb)(void *);
 
 typedef struct Search_Window
@@ -135,6 +135,7 @@ struct Search_Name
    unsigned int identifier;
    EMG *e;
    Ecore_Con_Url *ecu;
+   Eina_Strbuf *buf;
    const char *name;
    unsigned int namelen;
    unsigned int idx[2]; /* position, iterator */
@@ -207,7 +208,7 @@ struct Comic_Series
 };
 
 void search_name_free(Search_Name *sn);
-void search_name_data(Search_Name *sn, Ecore_Con_Event_Url_Data *ev);
+void search_name_parser(Search_Name *sn);
 char *search_name_list_text_cb(Search_Result *sr, Evas_Object *obj, const char *part);
 Evas_Object *search_name_list_pic_cb(Search_Result *sr, Evas_Object *obj, const char *part);
 void search_name_list_init(EMG *e, Evas_Object *list);
@@ -215,7 +216,7 @@ void search_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
 
 void search_result_free(Search_Result *sr);
 Search_Result *search_result_add(Search_Name *sn);
-void search_result_tag_add(Search_Result *sr, const unsigned char *index_start, const unsigned char *tag);
+void search_result_tag_add(Search_Result *sr, const char *index_start, const char *tag);
 
 void comic_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
 
@@ -233,7 +234,7 @@ void series_view_image_set(EMG *e, Eina_Binbuf *buf);
 
 Comic_Series *comic_series_find(EMG *e, const char *name);
 Comic_Series *comic_series_create(Search_Result *sr);
-void comic_series_data(Comic_Series *cs, Ecore_Con_Event_Url_Data *ev);
+void comic_series_parser(Comic_Series *cs);
 
 Comic_Chapter *comic_chapter_new(Comic_Series *cs);
 

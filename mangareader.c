@@ -1,37 +1,39 @@
 #include "mangareader.h"
 
 void
-mangareader_search_name_cb(Search_Name *sn, Ecore_Con_Event_Url_Data *ev)
+mangareader_search_name_cb(Search_Name *sn)
 {
+   const char *data = eina_strbuf_string_get(sn->buf);
+   size_t size = eina_strbuf_length_get(sn->buf);
+
    if ((!sn->idx[0]) && (!sn->idx[1]))
      sn->idx[0] = sn->provider.search_index + (sn->provider.search_name_count * sn->namelen);
-   DBG("(idx=%u,ev->size=%d)", sn->idx[0], ev->size);
+   DBG("(idx=%u,size=%d)", sn->idx[0], size);
    /* discard unneeded bytes, hooray */
    for (; (sn->idx[1] < sizeof(sn->provider.index_start)) && sn->provider.index_start[sn->idx[1]]; sn->idx[1]++)
      {
         Search_Result *sr = NULL;
-        unsigned char *p, *index_start;
+        const char *p, *index_start;
 
-        DBG("(idx=%u,ev->size=%d)", sn->idx[0], ev->size);
-        if (sn->idx[0] + sn->provider.index_start[sn->idx[1]] + 8 > (unsigned int)ev->size)
+        DBG("(idx=%u,size=%d)", sn->idx[0], size);
+        if (sn->idx[0] + sn->provider.index_start[sn->idx[1]] + 8 > (unsigned int)size)
           {
-             sn->idx[0] -= ev->size;
              /*
              char *buf;
-             buf = strndupa((char*)ev->data, ev->size);
+             buf = strndupa((char*)data, size);
              DBG("%s", buf);
              */
              return;
           }
         sn->idx[0] += sn->provider.index_start[sn->idx[1]];
-        index_start = ev->data + sn->idx[0];
+        index_start = data + sn->idx[0];
         if (!memcmp(index_start, "adfooter", 8))
           {
              sn->done = EINA_TRUE;
              return;
           }
         if (sn->provider.index_char[sn->idx[1]])
-          p = memchr(index_start, sn->provider.index_char[sn->idx[1]], ev->size - sn->idx[0]);
+          p = memchr(index_start, sn->provider.index_char[sn->idx[1]], size - sn->idx[0]);
         switch (sn->idx[1])
           {
            case 0: /* result image (thumb) */
@@ -66,7 +68,7 @@ mangareader_search_name_cb(Search_Name *sn, Ecore_Con_Event_Url_Data *ev)
              break;
            case 4: /* result tags */
              {
-                unsigned char *tag;
+                char *tag;
                 sr = EINA_INLIST_CONTAINER_GET(sn->results->last, Search_Result);
                 if (!isalnum(index_start[0]))
                   index_start++;
@@ -86,36 +88,38 @@ mangareader_search_name_cb(Search_Name *sn, Ecore_Con_Event_Url_Data *ev)
              sn->idx[1] = -1;
              continue;
           }
-        sn->idx[0] = p - ev->data;
+        sn->idx[0] = p - data;
      }
 }
 
 void
-mangareader_comic_series_data_cb(Comic_Series *cs, Ecore_Con_Event_Url_Data *ev)
+mangareader_comic_series_data_cb(Comic_Series *cs)
 {
+   const char *data = eina_strbuf_string_get(cs->buf);
+   size_t size = eina_strbuf_length_get(cs->buf);
+
    if ((!cs->idx[0]) && (!cs->idx[1]))
      cs->idx[0] = cs->provider.search_index + (MANGAREADER_SERIES_INDEX_NAME_COUNT * cs->namelen);
-   DBG("(idx=%u,ev->size=%d)", cs->idx[0], ev->size);
+   DBG("(idx=%u,size=%d)", cs->idx[0], size);
    /* discard unneeded bytes, hooray */
    for (; (cs->idx[1] < sizeof(cs->provider.index_start)) && (cs->provider.index_start[cs->idx[1]] || cs->provider.index_char[cs->idx[1]]); cs->idx[1]++)
      {
-        unsigned char *p, *index_start;
+        const char *p, *index_start;
         unsigned int jump = 0;
 
-        DBG("(idx=%u,ev->size=%d)", cs->idx[0], ev->size);
+        DBG("(idx=%u,size=%d)", cs->idx[0], size);
         if (cs->idx[1] == 1) jump = MANGAREADER_SERIES_INDEX_POST_IMAGE_NAME_COUNT * cs->namelen;
-        if (cs->idx[0] + cs->provider.index_start[cs->idx[1]] + jump > (unsigned int)ev->size)
+        if (cs->idx[0] + cs->provider.index_start[cs->idx[1]] + jump > (unsigned int)size)
           {
-             cs->idx[0] -= ev->size;
              /*
              char *buf;
-             buf = strndupa((char*)ev->data, ev->size);
+             buf = strndupa((char*)data, size);
              DBG("%s", buf);
              */
              return;
           }
         cs->idx[0] += cs->provider.index_start[cs->idx[1]] + jump;
-        index_start = ev->data + cs->idx[0];
+        index_start = data + cs->idx[0];
         /*
         if (!memcmp(index_start, "adfooter", 8))
           {
@@ -124,7 +128,7 @@ mangareader_comic_series_data_cb(Comic_Series *cs, Ecore_Con_Event_Url_Data *ev)
           }
         */
         if (cs->provider.index_char[cs->idx[1]])
-          p = memchr(index_start, cs->provider.index_char[cs->idx[1]], ev->size - cs->idx[0]);
+          p = memchr(index_start, cs->provider.index_char[cs->idx[1]], size - cs->idx[0]);
         switch (cs->idx[1])
           {
            case 0: /* series image */
@@ -173,16 +177,13 @@ mangareader_comic_series_data_cb(Comic_Series *cs, Ecore_Con_Event_Url_Data *ev)
                }
              break;
            case 6:
-             cs->buf = eina_strbuf_new();
              break;
            default:
-             eina_strbuf_append_length(cs->buf, (char*)index_start, ev->size - cs->idx[0]);
              cs->idx[1]++;
              return;
           }
-        cs->idx[0] = p - ev->data;
+        cs->idx[0] = p - data;
      }
-   eina_strbuf_append_length(cs->buf, (char*)ev->data, ev->size);
 }
 
 static void

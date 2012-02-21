@@ -175,7 +175,14 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
    switch (*identifier)
      {
       case IDENTIFIER_SEARCH_NAME:
-        search_name_data(ecore_con_url_data_get(ev->url_con), ev);
+        {
+           Search_Name *sn;
+
+           sn = ecore_con_url_data_get(ev->url_con);
+           if (!sn->buf) sn->buf = eina_strbuf_new();
+           eina_strbuf_append_length(sn->buf, (char*)ev->data, ev->size);
+           search_name_parser(sn);
+        }
         break;
       case IDENTIFIER_SEARCH_IMAGE:
       case IDENTIFIER_COMIC_IMAGE:
@@ -189,8 +196,15 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            break;
         }
       case IDENTIFIER_COMIC_SERIES:
-        comic_series_data(ecore_con_url_data_get(ev->url_con), ev);
-        break;
+        {
+           Comic_Series *cs;
+
+           cs = ecore_con_url_data_get(ev->url_con);
+           if (!cs->buf) cs->buf = eina_strbuf_new();
+           eina_strbuf_append_length(cs->buf, (char*)ev->data, ev->size);
+           comic_series_parser(cs);
+           break;
+        }
         
       default:
         break;
@@ -237,6 +251,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            sn = ecore_con_url_data_get(ev->url_con);
            elm_object_text_set(sn->e->sw.progress, "Complete");
            elm_object_disabled_set(sn->e->sw.entry, EINA_FALSE);
+           search_name_parser(sn);
            sn->e->sw.running--;
            break;
         }

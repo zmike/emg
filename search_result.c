@@ -34,7 +34,7 @@ search_result_add(Search_Name *sn)
 }
 
 void
-search_result_tag_add(Search_Result *sr, const unsigned char *index_start, const unsigned char *tag)
+search_result_tag_add(Search_Result *sr, const char *index_start, const char *tag)
 {
    const char *t;
 

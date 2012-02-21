@@ -47,4 +47,4 @@ do { \
 } while (0)
 
 void mangareader_series_init_cb(Comic_Series *cs);
-void mangareader_search_name_cb(Search_Name *sn, Ecore_Con_Event_Url_Data *ev);
+void mangareader_search_name_cb(Search_Name *sn);
