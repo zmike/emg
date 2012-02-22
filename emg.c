@@ -515,7 +515,7 @@ main(int argc, char *argv[])
 
    e.sv.desc_lbl = elm_label_add(e.win);
    WEIGHT(e.sv.desc_lbl, EVAS_HINT_EXPAND, 0);
-   ALIGN(e.sv.desc_lbl, 0, 0.5);
+   ALIGN(e.sv.desc_lbl, EVAS_HINT_FILL, 0.5);
    elm_label_line_wrap_set(e.sv.desc_lbl, ELM_WRAP_WORD);
    elm_box_pack_end(box, e.sv.desc_lbl);
    evas_object_show(e.sv.desc_lbl);
