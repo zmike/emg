@@ -120,47 +120,12 @@ series_view_year_set(EMG *e, Comic_Series *cs)
 void
 series_view_desc_set(EMG *e, Comic_Series *cs)
 {
- /* FIXME: use this after label wrapping is fixed
    char *buf;
    if (e->sv.cs != cs) return;
 
    buf = evas_textblock_text_markup_to_utf8(NULL, cs->desc);
    elm_object_text_set(e->sv.desc_lbl, buf);
    free(buf);
-  */
-   char *buf;
-   size_t size;
-   if (e->sv.cs != cs) return;
-
-   buf = evas_textblock_text_markup_to_utf8(NULL, cs->desc);
-   size = strlen(buf);
-   if (strchr(buf, '\n') || (size < 40))
-     elm_object_text_set(e->sv.desc_lbl, buf);
-   else
-     {
-        unsigned int x;
-        char *b, *a;
-
-        for (x = 1; x <= size / 40; x++)
-          {
-             a = strchr(buf + (x * 40), ' ');
-             b = buf + (x * 40);
-             if (b != buf)
-               {
-                  while (!isspace(b[0])) b--;
-               }
-             if (!a)
-               b[0] = '\n';
-             else if (!b)
-               a[0] = '\n';
-             else if ((a - buf) > (buf - b))
-               b[0] = '\n';
-             else
-               a[0] = '\n';
-          }
-        elm_object_text_set(e->sv.desc_lbl, buf);
-     }
-   free(buf);   
 }
 
 void
