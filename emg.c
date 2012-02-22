@@ -193,6 +193,14 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            ci = ecore_con_url_data_get(ev->url_con);
            if (!ci->buf) ci->buf = eina_binbuf_new();
            eina_binbuf_append_length(ci->buf, ev->data, ev->size);
+           if (*identifier == IDENTIFIER_COMIC_PAGE_IMAGE)
+             {
+                Comic_Page *cp;
+
+                cp = ci->parent;
+                if (cp->obj)
+                  elm_icon_memfile_set(cp->obj, eina_binbuf_string_get(cp->image.buf), eina_binbuf_length_get(cp->image.buf), NULL, NULL);
+             }
            //INF("IMGURL: %s", ci->imgurl);
            break;
         }
@@ -307,65 +315,32 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 }
 
 static void
-_entry_search(void *data __UNUSED__, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__)
+window_key(void *data __UNUSED__, Evas *evas __UNUSED__, Evas_Object *obj __UNUSED__, Evas_Event_Key_Down *ev)
 {
-   const char *name;
-   char *buf, *p, *pp;
-   size_t len = 0;
-   Ecore_Con_Url *url;
-   Search_Name *sn;
-   Eina_List *l;
-   Provider_Init_Cb cb;
-
-   name = elm_entry_entry_get(e.sw.entry);
-   if ((!name) || (!name[0])) return;
-   buf = evas_textblock_text_markup_to_utf8(NULL, name);
-   if ((!buf) || (!buf[0])) return;
-
-   if (e.sw.searches)
+   Elm_Object_Item *it;
+   switch (e.view)
      {
-        elm_genlist_clear(e.sw.list);
-        EINA_LIST_FREE(e.sw.searches, sn)
-          search_name_free(sn);
-     }
-   elm_toolbar_item_selected_set(e.sw.tb_it, EINA_TRUE);
-   elm_object_disabled_set(e.sw.entry, EINA_TRUE);
-   EINA_LIST_FOREACH(e.providers, l, cb)
-     {
-        sn = calloc(1, sizeof(Search_Name));
-        e.sw.searches = eina_list_append(e.sw.searches, sn);
-        sn->identifier = IDENTIFIER_SEARCH_NAME;
-        sn->name = eina_stringshare_add(buf);
-        sn->namelen = strlen(buf);
-        cb(sn);
-        sn->e = &e;
-
-        /* search strings use '+' instead of ' ' */
-        for (p = pp = strchr(buf, ' '); pp; pp = strchr(++p, ' '))
-          {
-             pp[0] = '+';
-             p = pp;
-          }
-        /* avoid strlen if possible */
-        if (p)
-          {
-             len = p - buf;
-             len += strlen(p);
-          }
+      case EMG_VIEW_READER:
+        if ((!strcmp(ev->keyname, "Left")) || (!strcmp(ev->keyname, "KP_Left")))
+          comic_view_page_prev(&e, NULL, NULL);
+        else if ((!strcmp(ev->keyname, "Right")) || (!strcmp(ev->keyname, "KP_Right")) || (!strcmp(ev->keyname, "KP_Space")))
+          comic_view_page_next(&e, NULL, NULL);
+        break;
+      case EMG_VIEW_SERIES:
+        it = elm_genlist_selected_item_get(e.sv.list);
+        if (!it) return;
+        comic_view_chapter_set(&e, elm_object_item_data_get(it));
+        comic_view_show(&e, NULL, NULL);
+        break;
+      case EMG_VIEW_SEARCH:
+        it = elm_genlist_selected_item_get(e.sw.list);
+        if (it)
+          search_result_pick(&e, NULL, it);
         else
-          len = sn->namelen;
-
-        p = alloca(len += strlen(sn->provider.search_url) + 1);
-        snprintf(p, len, "%s%s", sn->provider.search_url, buf);
-        free(buf);
-
-        INF("%s", p);
-        sn->ecu = url = ecore_con_url_new(p);
-        ecore_con_url_data_set(url, sn);
-        ecore_con_url_get(url);
+          search_name_create(&e, NULL, NULL);
+      default:
+        break;
      }
-
-   elm_object_text_set(e.sw.progress, "Searching...");
 }
 
 int
@@ -438,7 +413,7 @@ main(int argc, char *argv[])
 
    elm_box_pack_end(e.sw.box, entry);
    evas_object_show(entry);
-   evas_object_smart_callback_add(entry, "activated", _entry_search, entry);
+   evas_object_smart_callback_add(entry, "activated", (Evas_Smart_Cb)search_name_create, &e);
    evas_object_show(e.sw.fr);
 
    e.hbox = box2 = elm_box_add(win);
@@ -457,12 +432,9 @@ main(int argc, char *argv[])
    elm_toolbar_icon_order_lookup_set(e.tb, ELM_ICON_LOOKUP_FDO);
    elm_toolbar_always_select_mode_set(e.tb, EINA_TRUE);
    {
-      Elm_Object_Item *it;
-
-      e.sw.tb_it = it = elm_toolbar_item_append(e.tb, "system-search", "Search Results", (Evas_Smart_Cb)search_view_show, &e);
+      e.sw.tb_it = elm_toolbar_item_append(e.tb, "system-search", "Search Results", (Evas_Smart_Cb)search_view_show, &e);
       e.sv.tb_it = elm_toolbar_item_append(e.tb, NULL, "Current Series", (Evas_Smart_Cb)series_view_show, &e);
       e.cv.tb_it = elm_toolbar_item_append(e.tb, "view-presentation", "Reader", (Evas_Smart_Cb)comic_view_show, &e);
-      elm_toolbar_item_selected_set(it, EINA_TRUE);
    }
    elm_box_pack_end(box2, e.tb);
    evas_object_show(e.tb);
@@ -627,10 +599,23 @@ main(int argc, char *argv[])
    ecore_event_handler_add(ECORE_CON_EVENT_URL_DATA, (Ecore_Event_Handler_Cb)_url_data, NULL);
    ecore_event_handler_add(ECORE_CON_EVENT_URL_COMPLETE, (Ecore_Event_Handler_Cb)_url_complete, NULL);
 
+   evas_object_event_callback_add(win, EVAS_CALLBACK_KEY_DOWN, (Evas_Object_Event_Cb)window_key, &e);
+   {
+      Evas *evas;
+      Evas_Modifier_Mask ctrl, shift, alt;
+      evas = evas_object_evas_get(win);
+      ctrl = evas_key_modifier_mask_get(evas, "Control");
+      shift = evas_key_modifier_mask_get(evas, "Shift");
+      alt = evas_key_modifier_mask_get(evas, "Alt");
+      1 | evas_object_key_grab(win, "Return", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+      1 | evas_object_key_grab(win, "KP_Enter", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+   }
+
    evas_object_resize(win, 640, 712);
    elm_win_center(win, EINA_TRUE, EINA_TRUE);
 
    e.providers = eina_list_append(e.providers, mangareader_search_init_cb);
+   search_view_show(&e, NULL, NULL);
 
    elm_run();
    elm_shutdown();

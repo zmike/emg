@@ -68,6 +68,13 @@ typedef struct Comic_Provider Comic_Provider;
 typedef void (*Provider_Data_Cb)(void *);
 typedef void (*Provider_Init_Cb)(void *);
 
+typedef enum EMG_View
+{
+   EMG_VIEW_SEARCH,
+   EMG_VIEW_SERIES,
+   EMG_VIEW_READER
+} EMG_View;
+
 typedef struct Search_Window
 {
    Evas_Object *box;
@@ -126,6 +133,7 @@ typedef struct EMG
    Evas_Object *nf;
    Eina_List *series;
    Eina_List *providers;
+   EMG_View view;
 } EMG;
 
 struct Comic_Provider
@@ -249,8 +257,11 @@ char *search_name_list_text_cb(Search_Result *sr, Evas_Object *obj, const char *
 Evas_Object *search_name_list_pic_cb(Search_Result *sr, Evas_Object *obj, const char *part);
 void search_name_list_init(EMG *e, Evas_Object *list);
 
+void search_view_clear(EMG *e);
+void search_name_create(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__);
 void search_view_count_update(Search_Name *sn);
 void search_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
+void search_result_pick(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *it);
 
 void search_result_free(Search_Result *sr);
 Search_Result *search_result_add(Search_Name *sn);

@@ -213,8 +213,26 @@ series_view_show(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *event_inf
         elm_toolbar_item_selected_set(e->sv.tb_it, EINA_TRUE);
         return;
      }
+   if (e->view == EMG_VIEW_SERIES) return;
    elm_frame_collapse_go(e->sw.fr, EINA_TRUE);
-   elm_naviframe_item_simple_promote(e->nf, e->sv.scr);
+   elm_naviframe_item_promote(e->sv.nf_it);
+   if (e->view == EMG_VIEW_READER)
+     {
+        Evas *evas;
+        Evas_Modifier_Mask ctrl, shift, alt;
+        evas = evas_object_evas_get(e->win);
+        ctrl = evas_key_modifier_mask_get(evas, "Control");
+        shift = evas_key_modifier_mask_get(evas, "Shift");
+        alt = evas_key_modifier_mask_get(evas, "Alt");
+        1 | evas_object_key_grab(e->win, "Return", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+        1 | evas_object_key_grab(e->win, "KP_Enter", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+        evas_object_key_ungrab(e->win, "KP_Space", 0, ctrl | shift | alt);
+        evas_object_key_ungrab(e->win, "KP_Right", 0, ctrl | shift | alt);
+        evas_object_key_ungrab(e->win, "KP_Left", 0, ctrl | shift | alt);
+        evas_object_key_ungrab(e->win, "Right", 0, ctrl | shift | alt);
+        evas_object_key_ungrab(e->win, "Left", 0, ctrl | shift | alt);
+     }
+   e->view = EMG_VIEW_SERIES;
 }
 
 void

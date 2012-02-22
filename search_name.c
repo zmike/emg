@@ -17,25 +17,6 @@ _search_name_tooltip_cb(Search_Result *sr, Evas_Object *obj __UNUSED__, Evas_Obj
 }
 
 static void
-_search_name_pick_cb(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *it)
-{
-   Search_Result *sr = elm_object_item_data_get(it);
-   Comic_Series *cs;
-
-   cs = comic_series_find(sr->e, sr->name);
-   series_view_clear(sr->e);
-   if (cs)
-     {
-        series_view_populate(cs);
-        return;
-     }
-   cs = comic_series_new(sr);
-   series_view_title_set(e, cs);
-   cs->e->sv.cs = cs;
-   series_view_show(e, NULL, NULL);
-}
-
-static void
 _search_name_realize_cb(void *data __UNUSED__, Evas_Object *obj __UNUSED__, void *ev)
 {
    elm_object_item_tooltip_content_cb_set(ev, (Elm_Tooltip_Item_Content_Cb)_search_name_tooltip_cb, elm_object_item_data_get(ev), NULL);
@@ -124,7 +105,7 @@ search_name_parser(Search_Name *sn)
 void
 search_name_list_init(EMG *e, Evas_Object *list)
 {
-   evas_object_smart_callback_add(list, "activated", (Evas_Smart_Cb)_search_name_pick_cb, e);
+   evas_object_smart_callback_add(list, "activated", (Evas_Smart_Cb)search_result_pick, e);
    evas_object_smart_callback_add(list, "realized", (Evas_Smart_Cb)_search_name_realize_cb, NULL);
    evas_object_smart_callback_add(list, "unrealized", (Evas_Smart_Cb)_search_name_unrealize_cb, NULL);
 }
