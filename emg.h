@@ -45,19 +45,27 @@ do { \
    (SN)->provider.init_cb = PROVIDER##_INIT_CB; \
 } while (0)
 
+#define IDENTIFIER_COMIC_PAGE_IMAGE 701
+#define IDENTIFIER_COMIC_PAGE 700
 
 #define IDENTIFIER_COMIC_CHAPTER 662
 #define IDENTIFIER_COMIC_SERIES 661
 #define IDENTIFIER_COMIC_IMAGE 660
+
 #define IDENTIFIER_SEARCH_NAME 11
 #define IDENTIFIER_SEARCH_IMAGE 10
+
+
+
+#define DEFAULT_PAGE_READAHEAD 5
 
 typedef struct Search_Name Search_Name;
 typedef struct Comic_Series Comic_Series;
 typedef struct Search_Result Search_Result;
 typedef struct Comic_Chapter Comic_Chapter;
+typedef struct Comic_Page Comic_Page;
 typedef struct Comic_Provider Comic_Provider;
-typedef void (*Provider_Data_Cb)(void *data);
+typedef void (*Provider_Data_Cb)(void *);
 typedef void (*Provider_Init_Cb)(void *);
 
 typedef struct Search_Window
@@ -68,6 +76,7 @@ typedef struct Search_Window
    Evas_Object *progress;
    Evas_Object *list;
    Elm_Object_Item *tb_it;
+   Elm_Object_Item *nf_it;
 
    Eina_List *searches;
    unsigned int running;
@@ -76,9 +85,11 @@ typedef struct Search_Window
 
 typedef struct Comic_View
 {
-   Evas_Object *img;
+   Evas_Object *nf;
+   Evas_Object *prev, *next;
    Elm_Object_Item *tb_it;
-   Comic_Series *cs;
+   Elm_Object_Item *nf_it;
+   Comic_Chapter *cc;
 } Comic_View;
 
 typedef struct Series_View
@@ -96,6 +107,7 @@ typedef struct Series_View
    Evas_Object *chap_lbl;
    Evas_Object *year_lbl;
    Elm_Object_Item *tb_it;
+   Elm_Object_Item *nf_it;
 
    Evas_Object *list; /* ch list */
    Comic_Series *cs;
@@ -151,6 +163,7 @@ typedef struct Comic_Image
    unsigned int identifier;
    const char *imgurl;
    Eina_Binbuf *buf;
+   Ecore_Con_Url *ecu;
    void *parent;
 } Comic_Image;
 
@@ -171,17 +184,39 @@ struct Search_Result
    Comic_Image image;
 };
 
+struct Comic_Page
+{
+   unsigned int identifier;
+   EINA_INLIST;
+   const char *href;
+   unsigned int hreflen;
+   unsigned int number;
+   Evas_Object *obj;
+   Elm_Object_Item *nf_it;
+   Comic_Chapter *cc;
+   Comic_Image image;
+   unsigned int idx[2]; /* position, iterator */
+   Comic_Provider provider;
+   Eina_Strbuf *buf;
+   Ecore_Con_Url *ecu;
+   Eina_Bool done : 1;
+};
+
 struct Comic_Chapter
 {
    unsigned int identifier;
    EINA_INLIST;
+   Comic_Page *current;
    Comic_Series *cs;
    double number; /* chapter number */
+   unsigned int pages_fetched;
    const char *name;
    const char *href;
    const char *date;
-   Eina_List *imgs; /* binbufs */
+   Eina_Inlist *pages;
+   unsigned int page_count;
    Eina_Bool decimal : 1;
+   Eina_Bool done : 1;
 };
 
 struct Comic_Series
@@ -198,13 +233,14 @@ struct Comic_Series
    const char *artist;
    unsigned int namelen;
    Eina_Inlist *chapters;
+   Eina_Inlist *populate_job;
    Ecore_Con_Url *ecu;
+   Comic_Chapter *current;
    Comic_Image image;
    unsigned int idx[2]; /* position, iterator */
    Comic_Provider provider;
    Eina_Bool done : 1;
    Eina_Bool completed : 1;
-   Eina_Bool current : 1;
 };
 
 void search_name_free(Search_Name *sn);
@@ -212,13 +248,20 @@ void search_name_parser(Search_Name *sn);
 char *search_name_list_text_cb(Search_Result *sr, Evas_Object *obj, const char *part);
 Evas_Object *search_name_list_pic_cb(Search_Result *sr, Evas_Object *obj, const char *part);
 void search_name_list_init(EMG *e, Evas_Object *list);
+
+void search_view_count_update(Search_Name *sn);
 void search_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
 
 void search_result_free(Search_Result *sr);
 Search_Result *search_result_add(Search_Name *sn);
 void search_result_tag_add(Search_Result *sr, const char *index_start, const char *tag);
 
+void comic_view_readahead_ensure(EMG *e);
+void comic_view_page_set(EMG *e, Comic_Page *cp);
+void comic_view_chapter_set(EMG *e, Comic_Chapter *cc);
 void comic_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
+void comic_view_page_prev(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__);
+void comic_view_page_next(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__);
 
 void series_view_populate(Comic_Series *cs);
 void series_view_clear(EMG *e);
@@ -231,12 +274,21 @@ void series_view_year_set(EMG *e, Comic_Series *cs);
 void series_view_title_set(EMG *e, Comic_Series *cs);
 void series_view_desc_set(EMG *e, Comic_Series *cs);
 void series_view_image_set(EMG *e, Eina_Binbuf *buf);
+void series_view_list_init(EMG *e, Evas_Object *list);
 
 Comic_Series *comic_series_find(EMG *e, const char *name);
-Comic_Series *comic_series_create(Search_Result *sr);
+Comic_Series *comic_series_new(Search_Result *sr);
 void comic_series_parser(Comic_Series *cs);
 
 Comic_Chapter *comic_chapter_new(Comic_Series *cs);
+void comic_chapter_clear(Comic_Chapter *cc);
+
+Comic_Page *comic_page_new(Comic_Chapter *cc, unsigned int id);
+void comic_page_fetch(Comic_Page *page);
+void comic_page_parser(Comic_Page *cp);
+Comic_Page *comic_page_prev_get(Comic_Page *cp);
+Comic_Page *comic_page_next_get(Comic_Page *cp);
+Eina_Bool comic_page_current(Comic_Page *cp);
 
 void mangareader_search_init_cb(Search_Name *sn);
 

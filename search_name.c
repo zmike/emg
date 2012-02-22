@@ -29,9 +29,9 @@ _search_name_pick_cb(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *it)
         series_view_populate(cs);
         return;
      }
-   cs = comic_series_create(sr);
+   cs = comic_series_new(sr);
    series_view_title_set(e, cs);
-   cs->current = EINA_TRUE;
+   cs->e->sv.cs = cs;
    series_view_show(e, NULL, NULL);
 }
 
@@ -118,7 +118,6 @@ search_name_list_pic_cb(Search_Result *sr, Evas_Object *obj, const char *part)
 void
 search_name_parser(Search_Name *sn)
 {
-   if (sn->done) return;
    sn->provider.data_cb(sn);
 }
 
@@ -128,17 +127,4 @@ search_name_list_init(EMG *e, Evas_Object *list)
    evas_object_smart_callback_add(list, "activated", (Evas_Smart_Cb)_search_name_pick_cb, e);
    evas_object_smart_callback_add(list, "realized", (Evas_Smart_Cb)_search_name_realize_cb, NULL);
    evas_object_smart_callback_add(list, "unrealized", (Evas_Smart_Cb)_search_name_unrealize_cb, NULL);
-}
-
-
-void
-search_view_show(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *event_info __UNUSED__)
-{
-   if (!event_info)
-     {
-        elm_toolbar_item_selected_set(e->sw.tb_it, EINA_TRUE);
-        return;
-     }
-   elm_frame_collapse_go(e->sw.fr, EINA_FALSE);
-   elm_naviframe_item_simple_promote(e->nf, e->sw.list);
 }

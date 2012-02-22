@@ -1,13 +1,33 @@
 #include "emg.h"
 
+#define SERIES_VIEW_POPULATE_COUNT 10
+
+static void
+_series_view_pick_cb(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *it)
+{
+   Comic_Chapter *cc = elm_object_item_data_get(it);
+
+   comic_view_chapter_set(e, cc);  
+   comic_view_show(e, NULL, NULL);
+}
+
 void
 series_view_populate(Comic_Series *cs)
 {
-   Comic_Chapter *cc;
+   Comic_Chapter *cc = NULL;
+   unsigned int count = 0;
 
    DBG("cs=%s", cs->name);
-   EINA_INLIST_FOREACH(cs->chapters, cc)
-     elm_genlist_item_append(cs->e->sv.list, &cs->e->sv.itc, cc, NULL, 0, (Evas_Smart_Cb)NULL, NULL);
+   EINA_INLIST_FOREACH(cs->populate_job ?: cs->chapters, cc)
+     {
+        elm_genlist_item_append(cs->e->sv.list, &cs->e->sv.itc, cc, NULL, 0, (Evas_Smart_Cb)NULL, NULL);
+        if (++count == SERIES_VIEW_POPULATE_COUNT) break;
+     }
+   if (cc)
+     {
+        cs->populate_job = EINA_INLIST_GET(cc)->next;
+        if (cs->populate_job) ecore_job_add((Ecore_Cb)series_view_populate, cs);
+     }
 }
 
 char *
@@ -51,7 +71,7 @@ series_view_author_set(EMG *e, Comic_Series *cs)
    char *buf;
    size_t size;
 
-   if (!cs->current) return;
+   if (e->sv.cs != cs) return;
    size = strlen(cs->author) + sizeof("<b>Author:</b> ");
    buf = alloca(size);
    snprintf(buf, size, "<b>Author:</b> %s", cs->author);
@@ -64,7 +84,7 @@ series_view_artist_set(EMG *e, Comic_Series *cs)
    char *buf;
    size_t size;
 
-   if (!cs->current) return;
+   if (e->sv.cs != cs) return;
    size = strlen(cs->artist) + sizeof("<b>Artist:</b> ");
    buf = alloca(size);
    snprintf(buf, size, "<b>Artist:</b> %s", cs->artist);
@@ -77,7 +97,7 @@ series_view_chapters_set(EMG *e, Comic_Series *cs)
    char *buf;
    size_t size;
 
-   if (!cs->current) return;
+   if (e->sv.cs != cs) return;
    size = 16 + sizeof("<b>Chapters:</b> (<i>completed</i>)");
    buf = alloca(size);
    snprintf(buf, size, "<b>Chapters:</b> %u (<i>%s</i>)", cs->total, cs->completed ? "Completed" : "Ongoing");
@@ -90,7 +110,7 @@ series_view_year_set(EMG *e, Comic_Series *cs)
    char *buf;
    size_t size;
 
-   if (!cs->current) return;
+   if (e->sv.cs != cs) return;
    size = 16 + sizeof("<b>Year:</b> ");
    buf = alloca(size);
    snprintf(buf, size, "<b>Year:</b> %u", cs->year);
@@ -102,7 +122,7 @@ series_view_desc_set(EMG *e, Comic_Series *cs)
 {
  /* FIXME: use this after label wrapping is fixed
    char *buf;
-   if (!cs->current) return;
+   if (e->sv.cs != cs) return;
 
    buf = evas_textblock_text_markup_to_utf8(NULL, cs->desc);
    elm_object_text_set(e->sv.desc_lbl, buf);
@@ -110,7 +130,7 @@ series_view_desc_set(EMG *e, Comic_Series *cs)
   */
    char *buf;
    size_t size;
-   if (!cs->current) return;
+   if (e->sv.cs != cs) return;
 
    buf = evas_textblock_text_markup_to_utf8(NULL, cs->desc);
    size = strlen(buf);
@@ -150,7 +170,7 @@ series_view_title_set(EMG *e, Comic_Series *cs)
    size_t size;
 
 
-   if (!cs->current) return;
+   if (e->sv.cs != cs) return;
    if (!cs->alt_name)
      {
         elm_object_text_set(e->sv.title_lbl, cs->name);
@@ -195,4 +215,10 @@ series_view_show(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *event_inf
      }
    elm_frame_collapse_go(e->sw.fr, EINA_TRUE);
    elm_naviframe_item_simple_promote(e->nf, e->sv.scr);
+}
+
+void
+series_view_list_init(EMG *e, Evas_Object *list)
+{
+   evas_object_smart_callback_add(list, "activated", (Evas_Smart_Cb)_series_view_pick_cb, e);
 }

@@ -1,6 +1,21 @@
 #include "emg.h"
 
 void
+comic_view_readahead_ensure(EMG *e)
+{
+   Comic_Page *cp;
+   unsigned int x;
+
+   cp = comic_page_next_get(e->cv.cc->current);
+   if (!cp) return;
+   for (x = 0; (x < DEFAULT_PAGE_READAHEAD) && cp; x++, cp = comic_page_next_get(cp))
+     {
+        if ((!cp->image.ecu) && (!cp->image.buf) && (!cp->buf))
+          comic_page_fetch(cp);
+     }
+}
+
+void
 comic_view_show(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *event_info __UNUSED__)
 {
    if (!event_info)
@@ -9,5 +24,87 @@ comic_view_show(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *event_info
         return;
      }
    elm_frame_collapse_go(e->sw.fr, EINA_TRUE);
-   elm_naviframe_item_simple_promote(e->nf, e->cv.img);
+   elm_naviframe_item_simple_promote(e->nf, e->cv.nf);
 }
+
+void
+comic_view_page_set(EMG *e, Comic_Page *cp)
+{
+   char *buf;
+   size_t size;
+   Evas_Object *next, *prev;
+
+   cp->cc->current = cp;
+   if (cp->image.ecu || (!cp->image.buf)) return;
+
+   /* fetch readahead pages on every page set */
+   comic_view_readahead_ensure(e);
+   if (cp->obj && cp->nf_it)
+     {
+        elm_naviframe_item_promote(cp->nf_it);
+        return;
+     }
+        
+   cp->obj = elm_icon_add(e->win);
+   WEIGHT(cp->obj, 0, 0);
+   FILL(cp->obj);
+   elm_icon_animated_set(cp->obj, EINA_TRUE);
+   elm_icon_aspect_fixed_set(cp->obj, EINA_TRUE);
+   elm_icon_fill_outside_set(cp->obj, EINA_FALSE);
+   elm_icon_memfile_set(cp->obj, eina_binbuf_string_get(cp->image.buf), eina_binbuf_length_get(cp->image.buf), NULL, NULL);
+
+   size = cp->cc->cs->namelen + sizeof(" chapter ABCD:  - XYZ");
+   buf = alloca(size);
+   if (cp->cc->decimal)
+     snprintf(buf, size, "%s chapter %g%s%s - %u", cp->cc->cs->name, cp->cc->number, cp->cc->name ? ": " : "", cp->cc->name ?: "", cp->number);
+   else
+     snprintf(buf, size, "%s chapter %d%s%s - %u", cp->cc->cs->name, (int)cp->cc->number, cp->cc->name ? ": " : "", cp->cc->name ?: "", cp->number);
+   next = (EINA_INLIST_GET(cp)->next) || (EINA_INLIST_GET(cp->cc)->next) ? e->cv.next : NULL;
+   prev = (EINA_INLIST_GET(cp)->prev) || (EINA_INLIST_GET(cp->cc)->prev) ? e->cv.prev : NULL;
+   INF("PREV PAGE: %u; CURRENT PAGE: %u; NEXT PAGE: %u", prev ? (cp->number - 1) : 0, cp->number, next ? (cp->number + 1) : 0);
+   cp->nf_it = elm_naviframe_item_push(e->cv.nf, NULL, prev, next, cp->obj, NULL);
+   elm_object_focus_set(e->cv.next, EINA_TRUE);
+   evas_object_show(cp->obj);
+}
+
+void
+comic_view_chapter_set(EMG *e, Comic_Chapter *cc)
+{
+   Comic_Page *cp;
+   if (e->cv.cc && (e->cv.cc != cc))
+     ecore_job_add((Ecore_Cb)comic_chapter_clear, e->cv.cc);
+   cc->cs->current = e->cv.cc = cc;
+   if (cc->pages)
+     {
+        cp = EINA_INLIST_CONTAINER_GET(cc->pages, Comic_Page);
+        comic_view_page_set(e, cp);
+        return;
+     }
+   cp = comic_page_new(cc, 1);
+   cp->href = eina_stringshare_ref(cc->href);
+   comic_view_page_set(e, cp);
+   comic_page_fetch(cp);
+}
+
+void
+comic_view_page_prev(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__)
+{
+   Comic_Page *cp;
+
+   if ((!e->cv.cc) || (!e->cv.cc->current)) return;
+
+   cp = comic_page_prev_get(e->cv.cc->current);
+   comic_view_page_set(e, cp);
+}
+
+void
+comic_view_page_next(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__)
+{
+   Comic_Page *cp;
+
+   if ((!e->cv.cc) || (!e->cv.cc->current)) return;
+
+   cp = comic_page_next_get(e->cv.cc->current);
+   comic_view_page_set(e, cp);
+}
+

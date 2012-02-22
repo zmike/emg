@@ -157,7 +157,7 @@ _url_progress(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Pr
      {
       case IDENTIFIER_SEARCH_NAME:
         sn = ecore_con_url_data_get(ev->url_con);
-        if (sn->e->sw.progress)
+        if (sn->e->sw.progress && (ev->down.now > 0.0) && (ev->down.total > 0.0))
           elm_progressbar_value_set(sn->e->sw.progress, ev->down.now / ev->down.total);
         break;
       default:
@@ -186,13 +186,14 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
         break;
       case IDENTIFIER_SEARCH_IMAGE:
       case IDENTIFIER_COMIC_IMAGE:
+      case IDENTIFIER_COMIC_PAGE_IMAGE:
         {
            Comic_Image *ci;
 
            ci = ecore_con_url_data_get(ev->url_con);
            if (!ci->buf) ci->buf = eina_binbuf_new();
            eina_binbuf_append_length(ci->buf, ev->data, ev->size);
-           INF("IMGURL: %s", ci->imgurl);
+           //INF("IMGURL: %s", ci->imgurl);
            break;
         }
       case IDENTIFIER_COMIC_SERIES:
@@ -203,6 +204,16 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            if (!cs->buf) cs->buf = eina_strbuf_new();
            eina_strbuf_append_length(cs->buf, (char*)ev->data, ev->size);
            comic_series_parser(cs);
+           break;
+        }
+      case IDENTIFIER_COMIC_PAGE:
+        {
+           Comic_Page *cp;
+
+           cp = ecore_con_url_data_get(ev->url_con);
+           if (!cp->buf) cp->buf = eina_strbuf_new();
+           eina_strbuf_append_length(cp->buf, (char*)ev->data, ev->size);
+           comic_page_parser(cp);
            break;
         }
         
@@ -240,8 +251,23 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            ci = ecore_con_url_data_get(ev->url_con);
            INF("IMGURL DONE: %s", ci->imgurl);
            cs = ci->parent;
-           if (!cs->current) break;
+           if (cs != cs->e->sv.cs) break;
            series_view_image_set(cs->e, ci->buf);
+           ecore_con_url_free(ci->ecu);
+           ci->ecu = NULL;
+           break;
+        }
+      case IDENTIFIER_COMIC_PAGE_IMAGE:
+        {
+           Comic_Image *ci;
+           Comic_Page *cp;
+
+           ci = ecore_con_url_data_get(ev->url_con);
+           INF("IMGURL DONE: %s", ci->imgurl);
+           cp = ci->parent;
+           comic_view_readahead_ensure(&e);
+           if (!comic_page_current(cp)) break;
+           comic_view_page_set(&e, cp);
            break;
         }
       case IDENTIFIER_SEARCH_NAME:
@@ -250,9 +276,11 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 
            sn = ecore_con_url_data_get(ev->url_con);
            elm_object_text_set(sn->e->sw.progress, "Complete");
-           elm_object_disabled_set(sn->e->sw.entry, EINA_FALSE);
+           elm_progressbar_value_set(sn->e->sw.progress, 100);
+           sn->done = EINA_TRUE;
            search_name_parser(sn);
-           sn->e->sw.running--;
+           if (!(--sn->e->sw.running))
+             elm_object_disabled_set(sn->e->sw.entry, EINA_FALSE);
            break;
         }
       case IDENTIFIER_COMIC_SERIES:
@@ -260,9 +288,17 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            Comic_Series *cs;
 
            cs = ecore_con_url_data_get(ev->url_con);
-           cs->provider.init_cb(cs);
+           cs->done = EINA_TRUE;
+           comic_series_parser(cs);
+           if (e.sv.cs == cs)
+             series_view_populate(cs);
+           elm_genlist_item_selected_set(elm_genlist_first_item_get(e.sv.list), EINA_TRUE);
+           elm_object_focus_set(e.sv.list, EINA_TRUE);
            break;
         }
+      case IDENTIFIER_COMIC_PAGE:
+        comic_view_readahead_ensure(&e);
+        break;
       default:
         break;
      }
@@ -292,6 +328,7 @@ _entry_search(void *data __UNUSED__, Evas_Object *obj __UNUSED__, void *event_in
         EINA_LIST_FREE(e.sw.searches, sn)
           search_name_free(sn);
      }
+   elm_toolbar_item_selected_set(e.sw.tb_it, EINA_TRUE);
    elm_object_disabled_set(e.sw.entry, EINA_TRUE);
    EINA_LIST_FOREACH(e.providers, l, cb)
      {
@@ -334,7 +371,7 @@ _entry_search(void *data __UNUSED__, Evas_Object *obj __UNUSED__, void *event_in
 int
 main(int argc, char *argv[])
 {
-   Evas_Object *win, *bg, *box, *box2, *entry, *progress, *list, *sep, *scr;
+   Evas_Object *win, *bg, *box, *box2, *entry, *progress, *list, *sep, *scr, *ic;
 
    memset(&e.sw, 0, sizeof(Search_Window));
 
@@ -441,21 +478,36 @@ main(int argc, char *argv[])
    elm_box_pack_end(box2, e.nf);
    evas_object_show(e.nf);
 
-   e.cv.img = elm_icon_add(win);
-   EXPAND(e.cv.img);
-   FILL(e.cv.img);
-   elm_icon_animated_set(e.cv.img, EINA_TRUE);
-   elm_icon_aspect_fixed_set(e.cv.img, EINA_TRUE);
-   elm_icon_fill_outside_set(e.cv.img, EINA_FALSE);
-   elm_naviframe_item_simple_push(e.nf, e.cv.img);
-   evas_object_show(e.cv.img);
+   e.cv.nf = elm_naviframe_add(win);
+   EXPAND(e.cv.nf);
+   FILL(e.cv.nf);
+   e.cv.nf_it = elm_naviframe_item_simple_push(e.nf, e.cv.nf);
+   evas_object_show(e.cv.nf);
+
+   e.cv.prev = elm_button_add(win);
+   FILL(e.cv.prev);
+   ic = elm_icon_add(win);
+   FILL(ic);
+   elm_icon_standard_set(ic, "go-previous");
+   evas_object_show(ic);
+   elm_object_part_content_set(e.cv.prev, "icon", ic);
+   evas_object_smart_callback_add(e.cv.prev, "clicked", (Evas_Smart_Cb)comic_view_page_prev, &e);
+
+   e.cv.next = elm_button_add(win);
+   FILL(e.cv.next);
+   ic = elm_icon_add(win);
+   FILL(ic);
+   elm_icon_standard_set(ic, "go-next");
+   evas_object_show(ic);
+   elm_object_part_content_set(e.cv.next, "icon", ic);
+   evas_object_smart_callback_add(e.cv.next, "clicked", (Evas_Smart_Cb)comic_view_page_next, &e);
 
    e.sv.scr = scr = elm_scroller_add(win);
    elm_scroller_bounce_set(scr, EINA_FALSE, EINA_FALSE);
    elm_scroller_policy_set(scr, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
    EXPAND(scr);
    FILL(scr);
-   elm_naviframe_item_simple_push(e.nf, scr);
+   e.sv.nf_it = elm_naviframe_item_simple_push(e.nf, scr);
    evas_object_show(scr);
 
    e.sv.box = box = elm_box_add(win);
@@ -551,6 +603,7 @@ main(int argc, char *argv[])
    elm_genlist_bounce_set(list, EINA_FALSE, EINA_FALSE);
    elm_genlist_compress_mode_set(list, EINA_TRUE);
    elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
+   series_view_list_init(&e, list);
    elm_box_pack_end(e.sv.box, list);
    evas_object_show(list);
 
@@ -564,7 +617,7 @@ main(int argc, char *argv[])
    FILL(list);
    elm_genlist_bounce_set(list, EINA_FALSE, EINA_FALSE);
    elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
-   elm_naviframe_item_simple_push(e.nf, list);
+   e.sw.nf_it = elm_naviframe_item_simple_push(e.nf, list);
    search_name_list_init(&e, list);
    evas_object_show(list);
 

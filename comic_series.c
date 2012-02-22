@@ -16,7 +16,7 @@ comic_series_find(EMG *e, const char *name)
 }
 
 Comic_Series *
-comic_series_create(Search_Result *sr)
+comic_series_new(Search_Result *sr)
 {
    Comic_Series *cs;
    const char *buf;
