@@ -100,6 +100,7 @@ search_name_create(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSE
         sn->identifier = IDENTIFIER_SEARCH_NAME;
         sn->name = eina_stringshare_add(buf);
         sn->namelen = strlen(buf);
+        e->sw.running++;
         cb(sn);
         sn->e = e;
 

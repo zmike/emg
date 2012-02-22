@@ -111,6 +111,7 @@ comic_view_page_prev(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNU
    if ((!e->cv.cc) || (!e->cv.cc->current)) return;
 
    cp = comic_page_prev_get(e->cv.cc->current);
+   if (!cp) return;
    comic_view_page_set(e, cp);
 }
 
@@ -122,6 +123,7 @@ comic_view_page_next(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNU
    if ((!e->cv.cc) || (!e->cv.cc->current)) return;
 
    cp = comic_page_next_get(e->cv.cc->current);
+   if (!cp) return;
    comic_view_page_set(e, cp);
 }
 

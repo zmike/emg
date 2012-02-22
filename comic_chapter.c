@@ -27,3 +27,18 @@ comic_chapter_clear(Comic_Chapter *cc)
      }
    cc->pages_fetched = 0;
 }
+
+
+Comic_Chapter *
+comic_chapter_prev_get(Comic_Chapter *cc)
+{
+   if (!EINA_INLIST_GET(cc)->prev) return NULL;
+   return EINA_INLIST_CONTAINER_GET(EINA_INLIST_GET(cc)->prev, Comic_Chapter);
+}
+
+Comic_Chapter *
+comic_chapter_next_get(Comic_Chapter *cc)
+{
+   if (!EINA_INLIST_GET(cc)->next) return NULL;
+   return EINA_INLIST_CONTAINER_GET(EINA_INLIST_GET(cc)->next, Comic_Chapter);
+}

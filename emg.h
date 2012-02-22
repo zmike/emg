@@ -293,6 +293,8 @@ void comic_series_parser(Comic_Series *cs);
 
 Comic_Chapter *comic_chapter_new(Comic_Series *cs);
 void comic_chapter_clear(Comic_Chapter *cc);
+Comic_Chapter *comic_chapter_prev_get(Comic_Chapter *cc);
+Comic_Chapter *comic_chapter_next_get(Comic_Chapter *cc);
 
 Comic_Page *comic_page_new(Comic_Chapter *cc, unsigned int id);
 void comic_page_fetch(Comic_Page *page);

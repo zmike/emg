@@ -256,6 +256,12 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
 
    if ((!cp->idx[0]) && (!cp->idx[1]))
      cp->idx[0] = cp->provider.search_index + (MANGAREADER_PAGE_INDEX_NAME_COUNT * cp->cc->cs->namelen);
+   if (cp->cc->number > 9)
+     cp->idx[0] += 8;
+   if (cp->cc->number > 99)
+     cp->idx[0] += 8;
+   if (cp->cc->number > 999)
+     cp->idx[0] += 8;
    if (cp->number > 9)
      cp->idx[0] += 3;
    if (cp->number > 99)
@@ -290,22 +296,32 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
            case 2: /* next page href */
              {
                 Comic_Page *cn;
-                const char *dash;
+                const char *pp;
                 unsigned int num;
 
-                dash = (char*)memchr(p - 12, '-', 12);
-                num = strtoul(dash + 1, NULL, 10);
+                if (isdigit(p[-1]))
+                  {
+                     /* /SERIES_NAME/CHAPTER_NUMBER/SOME_OTHER_NUMBER */
+                     for (pp = p - 1; isdigit(pp[0]); pp--);
+                     pp--;
+                     for (--pp; isdigit(pp[0]); pp--);
+                  }
+                else
+                  {
+                     /* /NUMBER-NUMBER-PAGE_NUMBER/SERIES_NAME/chapter-CHAPTER_NUMBER.html */
+                     pp = (char*)memchr(p - 12, '-', 12);
+                  }
+                num = strtoul(pp + 1, NULL, 10);
                 if (num == cp->cc->number)
                   cn = comic_page_new(cp->cc, cp->number + 1);
                 else
                   {
-                     if (!EINA_INLIST_GET(cp->cc)->next)
+                     if (!comic_chapter_next_get(cp->cc))
                        {
-                          /* this should be impossible if I'm not a moron */
-                          CRI("PREPARING TO CRASH");
-                          abort();
+                          /* no more chapters available */
+                          break;
                        }
-                     cn = comic_page_new(EINA_INLIST_CONTAINER_GET(EINA_INLIST_GET(cp->cc)->next, Comic_Chapter), 1);
+                     cn = comic_page_new(comic_chapter_next_get(cp->cc), 1);
                   }
                 cn->href = eina_stringshare_add_length(index_start, p - index_start);
              }
@@ -320,7 +336,7 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
                   /* FIXME: this is super slow by comparison */
                   const char *pp;
 
-                  pp = strstr(data + (size - 4500), "imgholder");
+                  pp = strstr(data + (size - 5000), "imgholder");
                   pp = strstr(pp + 72, "src=");
                   pp += 5;
                   p = strchr(pp, '"');
