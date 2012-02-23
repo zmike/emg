@@ -1,6 +1,6 @@
 #include "mangareader.h"
 
-void
+static void
 mangareader_search_name_cb(Search_Name *sn)
 {
    const char *data;
@@ -156,7 +156,7 @@ mangareader_comic_series_data_cb2(Comic_Series *cs)
    cs->buf = NULL;
 }
 
-void
+static void
 mangareader_comic_series_data_cb(Comic_Series *cs)
 {
    const char *data;
@@ -252,7 +252,7 @@ mangareader_comic_series_data_cb(Comic_Series *cs)
      }
 }
 
-void
+static void
 mangareader_comic_page_data_cb(Comic_Page *cp)
 {
    const char *data = eina_strbuf_string_get(cp->buf);
@@ -391,7 +391,7 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
      }
 }
 
-void
+static void
 mangareader_comic_page_init_cb(Comic_Page *cp)
 {
    cp->provider.url = eina_stringshare_add(MANGAREADER_URL);
@@ -409,13 +409,7 @@ mangareader_comic_page_init_cb(Comic_Page *cp)
    cp->provider.data_cb = (Provider_Data_Cb)mangareader_comic_page_data_cb;
 }
 
-void
-mangareader_search_init_cb(Search_Name *sn)
-{
-   MANGAREADER_SEARCH_SETUP(sn);
-}
-
-void
+static void
 mangareader_series_init_cb(Comic_Series *cs)
 {
    cs->provider.url = eina_stringshare_add(MANGAREADER_URL);
@@ -438,4 +432,10 @@ mangareader_series_init_cb(Comic_Series *cs)
    cs->provider.index_char[7] = MANGAREADER_SERIES_INDEX_JUMP_CHAR;
    cs->provider.data_cb = (Provider_Data_Cb)mangareader_comic_series_data_cb;
    cs->provider.init_cb = (Provider_Init_Cb)mangareader_comic_page_init_cb;
+}
+
+void
+mangareader_search_init_cb(Search_Name *sn)
+{
+   MANGAREADER_SEARCH_SETUP(sn);
 }
