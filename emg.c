@@ -22,129 +22,6 @@
 int _emg_log_dom = -1;
 
 static EMG e;
-/*
-static void
-_title(Evas_Object *win)
-{
-   Evas_Coord ww, wh;
-   char buf[8192];
-   const char *f, *s;
-
-   evas_object_geometry_get(img, NULL, NULL, &ww, &wh);
-   elm_icon_file_get(img, &f, NULL);
-   s = strrchr(f, '/');
-   s = s ? s + 1 : f;
-   snprintf(buf, sizeof(buf), "%s (%ux%u)", s, ww, wh);
-   elm_win_title_set(win, buf);
-}
-
-static void
-_pick(void *data __UNUSED__, Evas_Object *obj __UNUSED__, Elm_Object_Item *ev)
-{
-   const char *file, *f, *p;
-   Evas_Object *win, *ic;
-   Evas_Coord w, h;
-
-   DBG("pick");
-   elm_icon_file_get(img, &f, &p);
-   file = elm_object_item_data_get(ev);
-   if (f && (!strcmp(file, f))) return;
-
-   if (!evas_object_image_extension_can_load_get(file))
-     {
-        ERR("Image loader for %s not detected", file);
-        return;
-     }
-   elm_icon_file_set(img, file, NULL);
-   win = elm_object_parent_widget_get(img);
-   ic = elm_icon_object_get(img);
-   evas_object_image_size_get(ic, &w, &h);
-   evas_object_resize(win, w, h);
-   _title(win);
-}
-
-static void
-_key(void *data __UNUSED__, Evas *e __UNUSED__, Evas_Object *obj, Evas_Event_Key_Down *key)
-{
-   Elm_Object_Item *it;
-   if (!strcmp(key->keyname, "space"))
-     {
-        it = elm_genlist_selected_item_get(list);
-        DBG("current: %p", it);
-        it = elm_genlist_item_next_get(it);
-        if (!it) it = elm_genlist_first_item_get(list);
-        DBG("next: %p", it);
-        elm_genlist_item_selected_set(it, EINA_TRUE);
-        elm_genlist_item_bring_in(it);
-        _pick(NULL, NULL, it);
-     }
-   else if ((!strcmp(key->keyname, "Return")) || (!strcmp(key->keyname, "KP_Enter")))
-     {
-        if (obj == elm_object_parent_widget_get(img)) return;
-        it = elm_genlist_selected_item_get(list);
-        if (!it) return;
-        elm_genlist_item_bring_in(it);
-        _pick(NULL, NULL, it);
-     }
-   else if (key->keyname[0] == 'q')
-     ecore_main_loop_quit();
-}
-
-static void
-_imgwin_create(void)
-{
-   Evas_Object *listwin, *win, *bg, *box;
-
-   win = elm_win_add(NULL, NULL, ELM_WIN_BASIC);
-   elm_win_autodel_set(win, EINA_TRUE);
-   elm_win_screen_constrain_set(win, EINA_TRUE);
-
-   bg = elm_bg_add(win);
-   EXPAND(bg);
-   elm_win_resize_object_add(win, bg);
-   evas_object_show(bg);
-
-   img = elm_icon_add(win);
-   EXPAND(img);
-   FILL(img);
-   elm_win_resize_object_add(win, img);
-   elm_icon_animated_set(img, EINA_TRUE);
-   elm_icon_aspect_fixed_set(img, EINA_TRUE);
-   elm_icon_fill_outside_set(img, EINA_FALSE);
-   evas_object_show(img);
-   evas_object_show(win);
-   evas_object_event_callback_add(win, EVAS_CALLBACK_KEY_DOWN, (Evas_Object_Event_Cb)_key, NULL);
-   1 | evas_object_key_grab(win, "space", 0, 0, 1);
-   1 | evas_object_key_grab(win, "q", 0, 0, 1);
-   evas_object_smart_callback_add(win, "delete,request", _close, NULL);
-
-   listwin = elm_win_add(NULL, "emg", ELM_WIN_BASIC);
-   elm_win_autodel_set(listwin, EINA_TRUE);
-
-   bg = elm_bg_add(listwin);
-   EXPAND(bg);
-   elm_win_resize_object_add(listwin, bg);
-   evas_object_show(bg);
-
-   box = elm_box_add(listwin);
-   EXPAND(box);
-   elm_win_resize_object_add(listwin, box);
-   evas_object_show(box);
-
-   list = elm_genlist_add(listwin);
-   EXPAND(list);
-   FILL(list);
-   elm_box_pack_end(box, list);
-   evas_object_show(list);
-   evas_object_smart_callback_add(list, "clicked,double", (Evas_Smart_Cb)_pick, NULL);
-   1 | evas_object_key_grab(listwin, "space", 0, 0, 1);
-   1 | evas_object_key_grab(listwin, "q", 0, 0, 1);
-   evas_object_event_callback_add(listwin, EVAS_CALLBACK_KEY_DOWN, (Evas_Object_Event_Cb)_key, NULL);
-   evas_object_smart_callback_add(img, "clicked", (Evas_Smart_Cb)_show, listwin);
-
-   evas_object_resize(listwin, 450, 350);
-}
-*/
 
 static Eina_Bool
 _url_progress(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Progress *ev)
@@ -182,6 +59,11 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            if (!sn->buf) sn->buf = eina_strbuf_new();
            eina_strbuf_append_length(sn->buf, (char*)ev->data, ev->size);
            search_name_parser(sn);
+           if (sn->done)
+             {
+                ecore_con_url_free(ev->url_con);
+                sn->ecu = NULL;
+             }
         }
         break;
       case IDENTIFIER_SEARCH_IMAGE:
@@ -194,14 +76,9 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            if (!ci->buf) ci->buf = eina_binbuf_new();
            eina_binbuf_append_length(ci->buf, ev->data, ev->size);
            if (*identifier == IDENTIFIER_COMIC_PAGE_IMAGE)
-             {
-                Comic_Page *cp;
+             comic_view_image_update(ci->parent);
 
-                cp = ci->parent;
-                if (cp->obj)
-                  elm_icon_memfile_set(cp->obj, eina_binbuf_string_get(cp->image.buf), eina_binbuf_length_get(cp->image.buf), NULL, NULL);
-             }
-           //INF("IMGURL: %s", ci->imgurl);
+           //INF("IMGURL: %s", ci->href);
            break;
         }
       case IDENTIFIER_COMIC_SERIES:
@@ -247,7 +124,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 
            ci = ecore_con_url_data_get(ev->url_con);
            ci->ecu = NULL;
-           INF("IMGURL DONE: %s", ci->imgurl);
+           INF("IMGURL DONE: %s", ci->href);
            sr = ci->parent;
            if (sr->it) elm_genlist_item_update(sr->it);
            break;
@@ -259,7 +136,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 
            ci = ecore_con_url_data_get(ev->url_con);
            ci->ecu = NULL;
-           INF("IMGURL DONE: %s", ci->imgurl);
+           INF("IMGURL DONE: %s", ci->href);
            cs = ci->parent;
            if (cs != cs->e->sv.cs) break;
            series_view_image_set(cs->e, ci->buf);
@@ -272,9 +149,10 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 
            ci = ecore_con_url_data_get(ev->url_con);
            ci->ecu = NULL;
-           INF("IMGURL DONE: %s", ci->imgurl);
            cp = ci->parent;
+           INF("PAGE %u IMG DONE: %s", cp->number, ci->href);
            comic_view_readahead_ensure(&e);
+           comic_view_image_update(cp);
            if (!comic_page_current(cp)) break;
            comic_view_page_set(&e, cp);
            break;
@@ -301,9 +179,13 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            cs->done = EINA_TRUE;
            cs->ecu = NULL;
            comic_series_parser(cs);
+           eina_strbuf_free(cs->buf);
+           cs->buf = NULL;
            if (e.sv.cs == cs)
-             series_view_populate(cs);
-           elm_genlist_item_selected_set(elm_genlist_first_item_get(e.sv.list), EINA_TRUE);
+             {
+                series_view_populate(cs);
+                elm_genlist_item_selected_set(elm_genlist_first_item_get(e.sv.list), EINA_TRUE);
+             }
            elm_object_focus_set(e.sv.list, EINA_TRUE);
            break;
         }
@@ -313,8 +195,12 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 
            cp = ecore_con_url_data_get(ev->url_con);
            cp->ecu = NULL;
+           if (cp->buf) eina_strbuf_free(cp->buf);
+           cp->buf = NULL;
            comic_view_readahead_ensure(&e);
            INF("PAGE DONE: %s", ecore_con_url_url_get(ev->url_con));
+           if (comic_page_current(cp))
+             comic_view_page_set(&e, cp);
         }
         break;
       default:

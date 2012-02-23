@@ -8,10 +8,10 @@ search_result_free(Search_Result *sr)
    if (!sr) return;
    INF("freeing %s", sr->name);
    eina_stringshare_del(sr->name);
-   free(sr->href);
+   eina_stringshare_del(sr->href);
    EINA_LIST_FREE(sr->tags, s)
       eina_stringshare_del(s);
-   eina_stringshare_del(sr->image.imgurl);
+   eina_stringshare_del(sr->image.href);
    if (sr->image.buf) eina_binbuf_free(sr->image.buf);
    eina_stringshare_del(sr->provider_url);
    free(sr);

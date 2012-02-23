@@ -42,28 +42,31 @@ comic_page_new(Comic_Chapter *cc, unsigned int id)
 void
 comic_page_fetch(Comic_Page *cp)
 {
-   char *buf;
-   size_t size;
+   Ecore_Con_Url *ecu;
 
-   if (!cp->href) return;
-   if (cp->ecu) return;
+   if ((!cp->href) && (!cp->image.href)) return;
+   if (cp->ecu || cp->image.ecu) return;
 
-   size = strlen(cp->provider.url) + strlen(cp->href) + 1;
-   buf = alloca(size);
-   snprintf(buf, size, "%s%s", cp->provider.url, cp->href);
-   cp->ecu = ecore_con_url_new(buf);
-   ecore_con_url_data_set(cp->ecu, cp);
-   ecore_con_url_get(cp->ecu);
-   if (cp->cc->decimal)
-     INF("PAGE FETCH: %s - %g:%u: %s", cp->cc->cs->name, cp->cc->number, cp->number, buf);
+   if (cp->image.href)
+     {
+        cp->image.ecu = ecu = ecore_con_url_new(cp->image.href);
+        ecore_con_url_data_set(cp->image.ecu, &cp->image);
+     }
    else
-     INF("PAGE FETCH: %s - %d:%u: %s", cp->cc->cs->name, (int)cp->cc->number, cp->number, buf);
+     {
+        cp->ecu = ecu = ecore_con_url_new(cp->href);
+        ecore_con_url_data_set(cp->ecu, cp);
+     }
+   if (!ecore_con_url_get(ecu)) abort(); /* FIXME */
+   if (cp->cc->decimal)
+     INF("PAGE FETCH: %s - %g:%u: %s", cp->cc->cs->name, cp->cc->number, cp->number, ecore_con_url_url_get(ecu));
+   else
+     INF("PAGE FETCH: %s - %d:%u: %s", cp->cc->cs->name, (int)cp->cc->number, cp->number, ecore_con_url_url_get(ecu));
 }
 
 void
 comic_page_parser(Comic_Page *cp)
 {
-   if (cp->done) return;
    cp->provider.data_cb(cp);
 }
 

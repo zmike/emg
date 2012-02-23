@@ -47,17 +47,21 @@ mangareader_search_name_cb(Search_Name *sn)
           {
            case 0: /* result image (thumb) */
              sr = search_result_add(sn);
-             sr->image.imgurl = eina_stringshare_add_length((char*)index_start, p - index_start);
-             INF("imgurl=%s", sr->image.imgurl);
+             sr->image.href = eina_stringshare_add_length((char*)index_start, p - index_start);
+             INF("href=%s", sr->image.href);
              {
-                sr->image.ecu = ecore_con_url_new(sr->image.imgurl);
+                sr->image.ecu = ecore_con_url_new(sr->image.href);
                 ecore_con_url_data_set(sr->image.ecu, &sr->image);
                 ecore_con_url_get(sr->image.ecu);
              }
              break;
            case 1: /* result link */
              sr = EINA_INLIST_CONTAINER_GET(sn->results->last, Search_Result);
-             sr->href = strndup((char*)index_start, p - index_start);
+             {
+                char *buf;
+                buf = strndupa(index_start, p - index_start);
+                sr->href = eina_stringshare_printf("%s%s", sn->provider.url, buf);
+             }
              INF("href=%s", sr->href);
              break;
            case 2: /* result name */
@@ -107,7 +111,6 @@ mangareader_comic_series_data_cb2(Comic_Series *cs)
    const char *base, *buf, *p;
    size_t size;
 
-   if (!cs->done) return;
    base = buf = eina_strbuf_string_get(cs->buf);
    size = eina_strbuf_length_get(cs->buf);
    buf += cs->idx[0];
@@ -131,8 +134,9 @@ mangareader_comic_series_data_cb2(Comic_Series *cs)
         if (buf[0] != '/') break;
         p = strchr(buf, '"');
         if (!p) abort(); /* FIXME */
-        cc = comic_chapter_new(cs);
-        cc->href = eina_stringshare_add_length(buf, p - buf);
+        cc = comic_chapter_new(cs, EINA_FALSE);
+        pp = strndupa(buf, p - buf);
+        cc->href = eina_stringshare_printf("%s%s", cs->provider.url, pp);
         buf = p + cs->namelen + 3;
         cc->number = strtod(buf, &pp);
         if (pp - buf > 2)
@@ -152,8 +156,6 @@ mangareader_comic_series_data_cb2(Comic_Series *cs)
         buf = p + 63;
         INF("chapter: %g - %s", cc->number, cc->name);
      }
-   eina_strbuf_free(cs->buf);
-   cs->buf = NULL;
 }
 
 static void
@@ -199,10 +201,10 @@ mangareader_comic_series_data_cb(Comic_Series *cs)
         switch (cs->idx[1])
           {
            case 0: /* series image */
-             cs->image.imgurl = eina_stringshare_add_length((char*)index_start, p - index_start);
-             INF("imgurl=%s", cs->image.imgurl);
+             cs->image.href = eina_stringshare_add_length((char*)index_start, p - index_start);
+             INF("href=%s", cs->image.href);
              {
-                cs->image.ecu = ecore_con_url_new(cs->image.imgurl);
+                cs->image.ecu = ecore_con_url_new(cs->image.href);
                 ecore_con_url_data_set(cs->image.ecu, &cs->image);
                 ecore_con_url_get(cs->image.ecu);
              }
@@ -255,9 +257,12 @@ mangareader_comic_series_data_cb(Comic_Series *cs)
 static void
 mangareader_comic_page_data_cb(Comic_Page *cp)
 {
-   const char *data = eina_strbuf_string_get(cp->buf);
-   size_t size = eina_strbuf_length_get(cp->buf);
+   const char *data;
+   size_t size;
 
+   if (cp->done || (!cp->buf)) return;
+   data = eina_strbuf_string_get(cp->buf);
+   size = eina_strbuf_length_get(cp->buf);
    if ((!cp->idx[0]) && (!cp->idx[1]))
      {
           cp->idx[0] = cp->provider.search_index + (MANGAREADER_PAGE_INDEX_NAME_COUNT * cp->cc->cs->namelen);
@@ -355,12 +360,16 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
                        }
                      cn = comic_page_new(cc, pnum);
                   }
-                cn->href = eina_stringshare_add_length(index_start, p - index_start);
+                {
+                   char *buf;
+                   buf = strndupa(index_start, p - index_start);
+                   cn->href = eina_stringshare_printf("%s%s", cn->provider.url, buf);
+                }
              }
              break;
            case 4: /* actual page image */
              if (p - index_start > 1)
-               cp->image.imgurl = eina_stringshare_add_length(index_start, p - index_start);
+               cp->image.href = eina_stringshare_add_length(index_start, p - index_start);
              else
                {
                   /* FIXME: this is super slow by comparison */
@@ -374,14 +383,9 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
                   if (size < (unsigned int)((pp - data) + 5)) return;
                   pp += 5;
                   p = strchr(pp, '"');
-                  cp->image.imgurl = eina_stringshare_add_length(pp, p - pp);
+                  cp->image.href = eina_stringshare_add_length(pp, p - pp);
                }
-             INF("%u imgurl=%s", cp->number, cp->image.imgurl);
-             {
-                cp->ecu = ecore_con_url_new(cp->image.imgurl);
-                ecore_con_url_data_set(cp->ecu, &cp->image);
-                ecore_con_url_get(cp->ecu);
-             }
+             INF("%u href=%s", cp->number, cp->image.href);
              break;
            default:
              cp->done = EINA_TRUE;
@@ -437,5 +441,23 @@ mangareader_series_init_cb(Comic_Series *cs)
 void
 mangareader_search_init_cb(Search_Name *sn)
 {
-   MANGAREADER_SEARCH_SETUP(sn);
+   sn->provider.url = eina_stringshare_add(MANGAREADER_URL);
+   sn->provider.search_url = eina_stringshare_add(MANGAREADER_SEARCH_URL);
+   sn->provider.search_index = MANGAREADER_SEARCH_INDEX;
+   sn->provider.search_name_count = MANGAREADER_SEARCH_INDEX_NAME_COUNT;
+   sn->provider.index_start[0] = MANGAREADER_SEARCH_INDEX_START;
+   sn->provider.index_char[0] = MANGAREADER_SEARCH_INDEX_START_CHAR;
+   sn->provider.index_start[1] = MANGAREADER_SEARCH_INDEX_POST_IMAGE;
+   sn->provider.index_char[1] = MANGAREADER_SEARCH_INDEX_POST_IMAGE_CHAR;
+   sn->provider.index_start[2] = MANGAREADER_SEARCH_INDEX_POST_HREF;
+   sn->provider.index_char[2] = MANGAREADER_SEARCH_INDEX_POST_HREF_CHAR;
+   sn->provider.index_start[3] = MANGAREADER_SEARCH_INDEX_CHAP;
+   sn->provider.index_char[3] = MANGAREADER_SEARCH_INDEX_CHAP_CHAR;
+   sn->provider.index_start[4] = MANGAREADER_SEARCH_INDEX_TAGS;
+   sn->provider.index_char[4] = MANGAREADER_SEARCH_INDEX_TAGS_CHAR;
+   sn->provider.index_start[5] = MANGAREADER_SEARCH_INDEX_END;
+   sn->provider.index_char[5] = MANGAREADER_SEARCH_INDEX_END_CHAR;
+   sn->provider.replace_str = strdup(MANGAREADER_REPLACE_STR);
+   sn->provider.data_cb = MANGAREADER_DATA_CB;
+   sn->provider.init_cb = MANGAREADER_INIT_CB;
 }

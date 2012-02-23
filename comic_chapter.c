@@ -1,14 +1,17 @@
 #include "emg.h"
 
 Comic_Chapter *
-comic_chapter_new(Comic_Series *cs)
+comic_chapter_new(Comic_Series *cs, Eina_Bool before)
 {
    Comic_Chapter *cc;
 
    cc = calloc(1, sizeof(Comic_Chapter));
    cc->cs = cs;
    cc->identifier = IDENTIFIER_COMIC_CHAPTER;
-   cs->chapters = eina_inlist_append(cs->chapters, EINA_INLIST_GET(cc));
+   if (before)
+     cs->chapters = eina_inlist_prepend(cs->chapters, EINA_INLIST_GET(cc));
+   else
+     cs->chapters = eina_inlist_append(cs->chapters, EINA_INLIST_GET(cc));
    return cc;
 }
 

@@ -23,28 +23,6 @@ extern int _emg_log_dom;
 #define EXPAND(X) WEIGHT((X), EVAS_HINT_EXPAND, EVAS_HINT_EXPAND)
 #define FILL(X) ALIGN((X), EVAS_HINT_FILL, EVAS_HINT_FILL)
 
-#define PROVIDER_SEARCH_SETUP(SN, PROVIDER) \
-do { \
-   (SN)->provider.url = eina_stringshare_add(PROVIDER##_URL); \
-   (SN)->provider.search_url = eina_stringshare_add(PROVIDER##_SEARCH_URL); \
-   (SN)->provider.search_index = PROVIDER##_SEARCH_INDEX; \
-   (SN)->provider.search_name_count = PROVIDER##_SEARCH_INDEX_NAME_COUNT; \
-   (SN)->provider.index_start[0] = PROVIDER##_SEARCH_INDEX_START; \
-   (SN)->provider.index_char[0] = PROVIDER##_SEARCH_INDEX_START_CHAR; \
-   (SN)->provider.index_start[1] = PROVIDER##_SEARCH_INDEX_POST_IMAGE; \
-   (SN)->provider.index_char[1] = PROVIDER##_SEARCH_INDEX_POST_IMAGE_CHAR; \
-   (SN)->provider.index_start[2] = PROVIDER##_SEARCH_INDEX_POST_HREF; \
-   (SN)->provider.index_char[2] = PROVIDER##_SEARCH_INDEX_POST_HREF_CHAR; \
-   (SN)->provider.index_start[3] = PROVIDER##_SEARCH_INDEX_CHAP; \
-   (SN)->provider.index_char[3] = PROVIDER##_SEARCH_INDEX_CHAP_CHAR; \
-   (SN)->provider.index_start[4] = PROVIDER##_SEARCH_INDEX_TAGS; \
-   (SN)->provider.index_char[4] = PROVIDER##_SEARCH_INDEX_TAGS_CHAR; \
-   (SN)->provider.index_start[5] = PROVIDER##_SEARCH_INDEX_END; \
-   (SN)->provider.index_char[5] = PROVIDER##_SEARCH_INDEX_END_CHAR; \
-   (SN)->provider.data_cb = PROVIDER##_DATA_CB; \
-   (SN)->provider.init_cb = PROVIDER##_INIT_CB; \
-} while (0)
-
 #define IDENTIFIER_COMIC_PAGE_IMAGE 701
 #define IDENTIFIER_COMIC_PAGE 700
 
@@ -139,14 +117,15 @@ typedef struct EMG
 
 struct Comic_Provider
 {
-   const char *url;
-   const char *search_url;
+   const char *url; /* base url */
+   const char *search_url; /* actually a fmt string */
    size_t search_index;
    unsigned int search_name_count;
    unsigned int index_start[10];
    char index_char[10];
-   Provider_Data_Cb data_cb;
-   Provider_Init_Cb init_cb;
+   char *replace_str; /* string to replace ' ' with */
+   Provider_Data_Cb data_cb; /* parser cb */
+   Provider_Init_Cb init_cb; /* init cb for subclass */
 };
 
 /* a user search by name */
@@ -158,6 +137,7 @@ struct Search_Name
    Eina_Strbuf *buf;
    const char *name;
    unsigned int namelen;
+   unsigned int snamelen; /* search escaped namelen */
    unsigned int idx[2]; /* position, iterator */
    /* inherited from provider */
    Comic_Provider provider;
@@ -169,7 +149,7 @@ struct Search_Name
 typedef struct Comic_Image
 {
    unsigned int identifier;
-   const char *imgurl;
+   const char *href;
    Eina_Binbuf *buf;
    Ecore_Con_Url *ecu;
    void *parent;
@@ -185,7 +165,7 @@ struct Search_Result
    const char *provider_url;
    const char *name;
    unsigned int namelen;
-   char *href;
+   const char *href;
    unsigned int total;
    Eina_List *tags;
    unsigned int tags_len;
@@ -269,6 +249,7 @@ void search_result_tag_add(Search_Result *sr, const char *index_start, const cha
 
 void comic_view_readahead_ensure(EMG *e);
 void comic_view_page_set(EMG *e, Comic_Page *cp);
+void comic_view_image_update(Comic_Page *cp);
 void comic_view_chapter_set(EMG *e, Comic_Chapter *cc);
 void comic_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
 void comic_view_page_prev(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__);
@@ -291,7 +272,7 @@ Comic_Series *comic_series_find(EMG *e, const char *name);
 Comic_Series *comic_series_new(Search_Result *sr);
 void comic_series_parser(Comic_Series *cs);
 
-Comic_Chapter *comic_chapter_new(Comic_Series *cs);
+Comic_Chapter *comic_chapter_new(Comic_Series *cs, Eina_Bool before);
 void comic_chapter_clear(Comic_Chapter *cc);
 Comic_Chapter *comic_chapter_prev_get(Comic_Chapter *cc);
 Comic_Chapter *comic_chapter_next_get(Comic_Chapter *cc);

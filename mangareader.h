@@ -51,10 +51,7 @@
 #define MANGAREADER_PAGE_INDEX_IMG 25
 #define MANGAREADER_PAGE_INDEX_IMG_CHAR '\''
 
-#define MANGAREADER_SEARCH_URL "http://www.mangareader.net/search/?w="
-#define MANGAREADER_URL "http://www.mangareader.net"
+#define MANGAREADER_REPLACE_STR "+"
 
-#define MANGAREADER_SEARCH_SETUP(SN) \
-do { \
-   PROVIDER_SEARCH_SETUP((SN), MANGAREADER); \
-} while (0)
+#define MANGAREADER_SEARCH_URL "http://www.mangareader.net/search/?w=%s"
+#define MANGAREADER_URL "http://www.mangareader.net"

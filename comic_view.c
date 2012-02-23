@@ -10,14 +10,14 @@ comic_view_readahead_ensure(EMG *e)
    if (!cp) return;
    for (x = 0; (x < DEFAULT_PAGE_READAHEAD) && cp; x++, cp = comic_page_next_get(cp))
      {
-        if ((!cp->image.ecu) && (!cp->image.buf) && (!cp->buf))
+        if ((!cp->obj) && (!cp->image.ecu) && (!cp->image.buf) && (!cp->buf) && (!cp->ecu))
           comic_page_fetch(cp);
      }
    cp = comic_page_prev_get(e->cv.cc->current);
    if (!cp) return;
    for (x = 0; (x < DEFAULT_PAGE_READBEHIND) && cp; x++, cp = comic_page_prev_get(cp))
      {
-        if ((!cp->image.ecu) && (!cp->image.buf) && (!cp->buf))
+        if ((!cp->obj) && (!cp->image.ecu) && (!cp->image.buf) && (!cp->buf) && (!cp->ecu))
           comic_page_fetch(cp);
      }
 }
@@ -52,6 +52,17 @@ comic_view_show(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *event_info
 }
 
 void
+comic_view_image_update(Comic_Page *cp)
+{
+   if ((!cp->obj) || (!cp->image.buf)) return;
+   if (!elm_icon_memfile_set(cp->obj, eina_binbuf_string_get(cp->image.buf), eina_binbuf_length_get(cp->image.buf), NULL, NULL))
+     abort();
+   if (cp->image.ecu) return;
+   eina_binbuf_free(cp->image.buf);
+   cp->image.buf = NULL;
+}
+
+void
 comic_view_page_set(EMG *e, Comic_Page *cp)
 {
    char *buf;
@@ -61,7 +72,7 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
 
    cp->cc->current = cp;
    e->cv.cc = cp->cc;
-   if (cp->image.ecu) return; /* currently downloading */
+   if (cp->image.ecu || cp->ecu) return; /* currently downloading */
    if ((!cp->obj) && (!cp->image.buf))
      {
         comic_page_fetch(cp);
@@ -74,6 +85,7 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
      {
         cpn = comic_page_next_get(cp);
         cpp = comic_page_prev_get(cp);
+        comic_view_image_update(cp);
         INF("PREV PAGE: %u; CURRENT PAGE: %u; NEXT PAGE: %u", cpp ? (cpp->number) : 0, cp->number, cpn ? (cpn->number) : 0);
         elm_naviframe_item_promote(cp->nf_it);
         return;
@@ -85,7 +97,7 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
    elm_icon_animated_set(cp->obj, EINA_TRUE);
    elm_icon_aspect_fixed_set(cp->obj, EINA_TRUE);
    elm_icon_fill_outside_set(cp->obj, EINA_FALSE);
-   elm_icon_memfile_set(cp->obj, eina_binbuf_string_get(cp->image.buf), eina_binbuf_length_get(cp->image.buf), NULL, NULL);
+   comic_view_image_update(cp);
 
    size = cp->cc->cs->namelen + sizeof(" ABCD:  - XYZ") + (cp->cc->name ? strlen(cp->cc->name) : 0);
    buf = alloca(size);
@@ -101,8 +113,6 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
    cp->nf_it = elm_naviframe_item_push(e->cv.nf, buf, prev, next, cp->obj, NULL);
    elm_object_focus_set(e->cv.next, EINA_TRUE);
    evas_object_show(cp->obj);
-   eina_binbuf_free(cp->image.buf);
-   cp->image.buf = NULL;
 }
 
 void

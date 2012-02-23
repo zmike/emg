@@ -19,7 +19,6 @@ Comic_Series *
 comic_series_new(Search_Result *sr)
 {
    Comic_Series *cs;
-   const char *buf;
 
    cs = calloc(1, sizeof(Comic_Series));
 
@@ -40,9 +39,7 @@ comic_series_new(Search_Result *sr)
    cs->image.identifier = IDENTIFIER_COMIC_IMAGE;
    cs->image.parent = cs;
 
-   buf = eina_stringshare_printf("%s%s", sr->provider_url, sr->href);
-   cs->ecu = ecore_con_url_new(buf);
-   eina_stringshare_del(buf);
+   cs->ecu = ecore_con_url_new(sr->href);
    ecore_con_url_data_set(cs->ecu, cs);
    ecore_con_url_get(cs->ecu);
    return cs;

@@ -104,23 +104,40 @@ search_name_create(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSE
         cb(sn);
         sn->e = e;
 
-        /* search strings use '+' instead of ' ' */
-        for (p = pp = strchr(buf, ' '); pp; pp = strchr(++p, ' '))
+        if (sn->provider.replace_str[1])
           {
-             pp[0] = '+';
-             p = pp;
-          }
-        /* avoid strlen if possible */
-        if (p)
-          {
-             len = p - buf;
-             len += strlen(p);
+             Eina_Strbuf *sbuf;
+
+             sbuf = eina_strbuf_manage_new(buf);
+             eina_strbuf_replace_all(sbuf, " ", sn->provider.replace_str);
+             len = sn->snamelen = eina_strbuf_length_get(sbuf);
+             buf = eina_strbuf_string_steal(sbuf);
+             eina_strbuf_free(sbuf);
           }
         else
-          len = sn->namelen;
+          {
+             /* avoid realloc */
+             for (p = pp = strchr(buf, ' '); pp; pp = strchr(++p, ' '))
+               {
+                  pp[0] = sn->provider.replace_str[0];
+                  p = pp;
+               }
+             sn->snamelen = sn->namelen;
+          }
+        /* avoid strlen if possible */
+        if (!len)
+          {
+             if (p)
+               {
+                  len = p - buf;
+                  len += strlen(p);
+               }
+             else
+               len = sn->namelen;
+          }
 
         p = alloca(len += strlen(sn->provider.search_url) + 1);
-        snprintf(p, len, "%s%s", sn->provider.search_url, buf);
+        snprintf(p, len, sn->provider.search_url, buf);
         free(buf);
 
         INF("%s", p);
