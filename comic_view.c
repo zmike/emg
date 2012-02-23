@@ -13,14 +13,6 @@ comic_view_readahead_ensure(EMG *e)
         if ((!cp->image.ecu) && (!cp->image.buf) && (!cp->buf))
           comic_page_fetch(cp);
      }
-}
-
-void
-comic_view_readbehind_ensure(EMG *e)
-{
-   Comic_Page *cp;
-   unsigned int x;
-
    cp = comic_page_prev_get(e->cv.cc->current);
    if (!cp) return;
    for (x = 0; (x < DEFAULT_PAGE_READBEHIND) && cp; x++, cp = comic_page_prev_get(cp))
@@ -68,6 +60,7 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
    Comic_Page *cpn, *cpp;
 
    cp->cc->current = cp;
+   e->cv.cc = cp->cc;
    if (cp->image.ecu) return; /* currently downloading */
    if ((!cp->obj) && (!cp->image.buf))
      {
@@ -77,7 +70,6 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
 
    /* fetch readahead pages on every page set */
    comic_view_readahead_ensure(e);
-   comic_view_readbehind_ensure(e);
    if (cp->obj && cp->nf_it)
      {
         cpn = comic_page_next_get(cp);

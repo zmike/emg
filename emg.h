@@ -268,7 +268,6 @@ Search_Result *search_result_add(Search_Name *sn);
 void search_result_tag_add(Search_Result *sr, const char *index_start, const char *tag);
 
 void comic_view_readahead_ensure(EMG *e);
-void comic_view_readbehind_ensure(EMG *e);
 void comic_view_page_set(EMG *e, Comic_Page *cp);
 void comic_view_chapter_set(EMG *e, Comic_Chapter *cc);
 void comic_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);

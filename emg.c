@@ -275,7 +275,6 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            INF("IMGURL DONE: %s", ci->imgurl);
            cp = ci->parent;
            comic_view_readahead_ensure(&e);
-           comic_view_readbehind_ensure(&e);
            if (!comic_page_current(cp)) break;
            comic_view_page_set(&e, cp);
            break;

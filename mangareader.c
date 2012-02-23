@@ -11,14 +11,14 @@ mangareader_search_name_cb(Search_Name *sn)
    size = eina_strbuf_length_get(sn->buf);
    if ((!sn->idx[0]) && (!sn->idx[1]))
      sn->idx[0] = sn->provider.search_index + (sn->provider.search_name_count * sn->namelen);
-   DBG("(idx=%u,size=%d)", sn->idx[0], size);
+   //DBG("(idx=%u,size=%d)", sn->idx[0], size);
    /* discard unneeded bytes, hooray */
    for (; (sn->idx[1] < sizeof(sn->provider.index_start)) && sn->provider.index_start[sn->idx[1]]; sn->idx[1]++)
      {
         Search_Result *sr = NULL;
         const char *p, *index_start;
 
-        DBG("(idx=%u,size=%d)", sn->idx[0], size);
+        //DBG("(idx=%u,size=%d)", sn->idx[0], size);
         if (sn->idx[0] + sn->provider.index_start[sn->idx[1]] + 8 > (unsigned int)size)
           {
              /*
@@ -172,14 +172,14 @@ mangareader_comic_series_data_cb(Comic_Series *cs)
    size = eina_strbuf_length_get(cs->buf);
    if ((!cs->idx[0]) && (!cs->idx[1]))
      cs->idx[0] = cs->provider.search_index + (MANGAREADER_SERIES_INDEX_NAME_COUNT * cs->namelen);
-   DBG("(idx=%u,size=%d)", cs->idx[0], size);
+   //DBG("(idx=%u,size=%d)", cs->idx[0], size);
    /* discard unneeded bytes, hooray */
    for (; (cs->idx[1] < sizeof(cs->provider.index_start)) && (cs->provider.index_start[cs->idx[1]] || cs->provider.index_char[cs->idx[1]]); cs->idx[1]++)
      {
         const char *p, *index_start;
         unsigned int jump = 0;
 
-        DBG("(idx=%u,size=%d)", cs->idx[0], size);
+        //DBG("(idx=%u,size=%d)", cs->idx[0], size);
         if (cs->idx[1] == 1) jump = MANGAREADER_SERIES_INDEX_POST_IMAGE_NAME_COUNT * cs->namelen;
         if (cs->idx[0] + cs->provider.index_start[cs->idx[1]] + jump > (unsigned int)size)
           {
@@ -274,17 +274,13 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
         if (cp->number > 999)
           cp->idx[0] += 3;
      }
-   if (cp->number == 56)
-     {
-        INF("X");
-     }
-   DBG("(idx=%u,size=%d)", cp->idx[0], size);
+   //DBG("(idx=%u,size=%d)", cp->idx[0], size);
    /* discard unneeded bytes, hooray */
    for (; (cp->idx[1] < sizeof(cp->provider.index_start)) && (cp->provider.index_start[cp->idx[1]] || cp->provider.index_char[cp->idx[1]]); cp->idx[1]++)
      {
         const char *p, *index_start;
 
-        DBG("(idx=%u,size=%d)", cp->idx[0], size);
+        //DBG("(idx=%u,size=%d)", cp->idx[0], size);
         if (cp->idx[0] + cp->provider.index_start[cp->idx[1]] > size)
           {
              /*

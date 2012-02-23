@@ -12,7 +12,7 @@ comic_page_new(Comic_Chapter *cc, unsigned int id)
    cp->image.identifier = IDENTIFIER_COMIC_PAGE_IMAGE;
    cp->image.parent = cp;
    cp->number = id;
-   INF("NEW PAGE: %u", id);
+   INF("NEW PAGE FOR %g: %u", cc->number, id);
    cc->page_count++;
    if (cc->pages)
      {
@@ -23,8 +23,13 @@ comic_page_new(Comic_Chapter *cc, unsigned int id)
              EINA_INLIST_REVERSE_FOREACH(cc->pages, cf)
                {
                   if (cf->number < cp->number)
-                    cc->pages = eina_inlist_append_relative(cc->pages, EINA_INLIST_GET(cp), EINA_INLIST_GET(cf));
+                    {
+                       cc->pages = eina_inlist_append_relative(cc->pages, EINA_INLIST_GET(cp), EINA_INLIST_GET(cf));
+                       in = EINA_TRUE;
+                    }
                }
+             if (!in)
+               cc->pages = eina_inlist_prepend(cc->pages, EINA_INLIST_GET(cp));
              in = EINA_TRUE;
           }
      }
