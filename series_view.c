@@ -17,7 +17,7 @@ series_view_populate(Comic_Series *cs)
    Comic_Chapter *cc = NULL;
    unsigned int count = 0;
 
-   DBG("cs=%s", cs->name);
+   //DBG("cs=%s", cs->name);
    EINA_INLIST_FOREACH(cs->populate_job ?: cs->chapters, cc)
      {
         elm_genlist_item_append(cs->e->sv.list, &cs->e->sv.itc, cc, NULL, 0, (Evas_Smart_Cb)NULL, NULL);
@@ -56,6 +56,7 @@ series_view_clear(EMG *e)
 {
    if (e->sv.img) evas_object_del(e->sv.img);
    e->sv.img = NULL;
+   elm_genlist_clear(e->sv.list);
    elm_object_text_set(e->sv.title_lbl, "");
    elm_object_text_set(e->sv.desc_lbl, "");
    elm_object_text_set(e->sv.auth_lbl, "");

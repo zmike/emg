@@ -58,6 +58,7 @@ do { \
 
 
 #define DEFAULT_PAGE_READAHEAD 5
+#define DEFAULT_PAGE_READBEHIND 2
 
 typedef struct Search_Name Search_Name;
 typedef struct Comic_Series Comic_Series;
@@ -144,7 +145,6 @@ struct Comic_Provider
    unsigned int search_name_count;
    unsigned int index_start[10];
    char index_char[10];
-   unsigned int index_data;
    Provider_Data_Cb data_cb;
    Provider_Init_Cb init_cb;
 };
@@ -268,6 +268,7 @@ Search_Result *search_result_add(Search_Name *sn);
 void search_result_tag_add(Search_Result *sr, const char *index_start, const char *tag);
 
 void comic_view_readahead_ensure(EMG *e);
+void comic_view_readbehind_ensure(EMG *e);
 void comic_view_page_set(EMG *e, Comic_Page *cp);
 void comic_view_chapter_set(EMG *e, Comic_Chapter *cc);
 void comic_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);

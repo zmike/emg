@@ -29,8 +29,7 @@ mangareader_search_name_cb(Search_Name *sn)
              search_view_count_update(sn);
              return;
           }
-        sn->idx[0] += sn->provider.index_start[sn->idx[1]];
-        index_start = data + sn->idx[0];
+        index_start = data + sn->idx[0] + sn->provider.index_start[sn->idx[1]];
         if (!memcmp(index_start, "adfooter", 8))
           {
              sn->done = EINA_TRUE;
@@ -40,7 +39,10 @@ mangareader_search_name_cb(Search_Name *sn)
              return;
           }
         if (sn->provider.index_char[sn->idx[1]])
-          p = memchr(index_start, sn->provider.index_char[sn->idx[1]], size - sn->idx[0]);
+          {
+             p = memchr(index_start, sn->provider.index_char[sn->idx[1]], size - sn->idx[0]);
+             if (!p) return;
+          }
         switch (sn->idx[1])
           {
            case 0: /* result image (thumb) */
@@ -92,7 +94,7 @@ mangareader_search_name_cb(Search_Name *sn)
              }
            default:
              sn->idx[1] = -1;
-             continue;
+             p = index_start;
           }
         sn->idx[0] = p - data;
      }
@@ -188,10 +190,12 @@ mangareader_comic_series_data_cb(Comic_Series *cs)
              */
              return;
           }
-        cs->idx[0] += cs->provider.index_start[cs->idx[1]] + jump;
-        index_start = data + cs->idx[0];
+        index_start = data + cs->idx[0] + cs->provider.index_start[cs->idx[1]] + jump;
         if (cs->provider.index_char[cs->idx[1]])
-          p = memchr(index_start, cs->provider.index_char[cs->idx[1]], size - cs->idx[0]);
+          {
+             p = memchr(index_start, cs->provider.index_char[cs->idx[1]], size - cs->idx[0]);
+             if (!p) return;
+          }
         switch (cs->idx[1])
           {
            case 0: /* series image */
@@ -255,19 +259,25 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
    size_t size = eina_strbuf_length_get(cp->buf);
 
    if ((!cp->idx[0]) && (!cp->idx[1]))
-     cp->idx[0] = cp->provider.search_index + (MANGAREADER_PAGE_INDEX_NAME_COUNT * cp->cc->cs->namelen);
-   if (cp->cc->number > 9)
-     cp->idx[0] += 8;
-   if (cp->cc->number > 99)
-     cp->idx[0] += 8;
-   if (cp->cc->number > 999)
-     cp->idx[0] += 8;
-   if (cp->number > 9)
-     cp->idx[0] += 3;
-   if (cp->number > 99)
-     cp->idx[0] += 3;
-   if (cp->number > 999)
-     cp->idx[0] += 3;
+     {
+          cp->idx[0] = cp->provider.search_index + (MANGAREADER_PAGE_INDEX_NAME_COUNT * cp->cc->cs->namelen);
+        if (cp->cc->number > 9)
+          cp->idx[0] += 8;
+        if (cp->cc->number > 99)
+          cp->idx[0] += 8;
+        if (cp->cc->number > 999)
+          cp->idx[0] += 8;
+        if (cp->number > 9)
+          cp->idx[0] += 3;
+        if (cp->number > 99)
+          cp->idx[0] += 3;
+        if (cp->number > 999)
+          cp->idx[0] += 3;
+     }
+   if (cp->number == 56)
+     {
+        INF("X");
+     }
    DBG("(idx=%u,size=%d)", cp->idx[0], size);
    /* discard unneeded bytes, hooray */
    for (; (cp->idx[1] < sizeof(cp->provider.index_start)) && (cp->provider.index_start[cp->idx[1]] || cp->provider.index_char[cp->idx[1]]); cp->idx[1]++)
@@ -284,49 +294,73 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
              */
              return;
           }
-        cp->idx[0] += cp->provider.index_start[cp->idx[1]];
-        index_start = data + cp->idx[0];
+        index_start = data + cp->idx[0] + cp->provider.index_start[cp->idx[1]];
+        if ((!cp->idx[1]) && (!memcmp(index_start, "ader", 4)))
+          /* shouldn't get here, fix this if it happens */
+          abort();
         if (cp->provider.index_char[cp->idx[1]])
-          p = memchr(index_start, cp->provider.index_char[cp->idx[1]], size - cp->idx[0]);
+          {
+             p = memchr(index_start, cp->provider.index_char[cp->idx[1]], size - cp->idx[0]);
+             if (!p) return;
+          }
         switch (cp->idx[1])
           {
            case 0: /* placeholder */
            case 1: /* placeholder */
              break;
            case 2: /* next page href */
+           case 3:
              {
                 Comic_Page *cn;
-                const char *pp;
-                unsigned int num;
+                const char *pp, *ppp;
+                unsigned int cnum = 0, pnum = 0;
 
+                if (index_start == p) break; /* no uri */
+                if ((cp->idx[1] == 2) && comic_page_next_get(cp))
+                  /* already have a next page, no need to do anything here */
+                  break;
+                if ((cp->idx[1] == 3) && comic_page_prev_get(cp))
+                  /* already have a previous page, no need to do anything here */
+                  break;
+                pp = index_start + 1;
+                pp = strchr(pp, '/');
+                if (!pp) abort(); /* need to implement parser here */
                 if (isdigit(p[-1]))
                   {
-                     /* /SERIES_NAME/CHAPTER_NUMBER/SOME_OTHER_NUMBER */
-                     for (pp = p - 1; isdigit(pp[0]); pp--);
-                     pp--;
-                     for (--pp; isdigit(pp[0]); pp--);
+                                 /* V */
+                     /* /SERIES_NAME/CHAPTER_NUMBER/(PAGE_NUMBER)? */
+                     cnum = strtoul(pp + 1, (char**)&ppp, 10);
+                     if (isdigit(ppp[1]))
+                       pnum = strtoul(ppp + 1, NULL, 10);
                   }
                 else
                   {
+                                               /* V */
                      /* /NUMBER-NUMBER-PAGE_NUMBER/SERIES_NAME/chapter-CHAPTER_NUMBER.html */
+                     pp = memrchr(index_start, '-', (pp - 1) - index_start);
+                     pnum = strtoul(pp + 1, (char**)&ppp, 10);
                      pp = (char*)memchr(p - 12, '-', 12);
+                     cnum = strtoul(pp + 1, NULL, 10);
                   }
-                num = strtoul(pp + 1, NULL, 10);
-                if (num == cp->cc->number)
-                  cn = comic_page_new(cp->cc, cp->number + 1);
+                if (cnum == cp->cc->number)
+                  cn = comic_page_new(cp->cc, pnum ?: 1);
                 else
                   {
-                     if (!comic_chapter_next_get(cp->cc))
+                     Comic_Chapter *cc;
+
+                     if (cp->idx[1] == 2)
+                       cc = comic_chapter_next_get(cp->cc);
+                     else
+                       cc = comic_chapter_prev_get(cp->cc);
+                     if (!cc)
                        {
-                          /* no more chapters available */
+                          /* no more chapters available in this direction, shouldn't get here */
                           break;
                        }
-                     cn = comic_page_new(comic_chapter_next_get(cp->cc), 1);
+                     cn = comic_page_new(cc, pnum);
                   }
                 cn->href = eina_stringshare_add_length(index_start, p - index_start);
              }
-             break;
-           case 3: /* placeholder */
              break;
            case 4: /* actual page image */
              if (p - index_start > 1)
@@ -336,13 +370,17 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
                   /* FIXME: this is super slow by comparison */
                   const char *pp;
 
+                  if (size <= 5100) return;
                   pp = strstr(data + (size - 5000), "imgholder");
-                  pp = strstr(pp + 72, "src=");
+                  if (!pp) return; /* need more data */
+                  if (size < (unsigned int)((pp - data) + 60)) return;
+                  pp = strstr(pp + 60, "src=");
+                  if (size < (unsigned int)((pp - data) + 5)) return;
                   pp += 5;
                   p = strchr(pp, '"');
                   cp->image.imgurl = eina_stringshare_add_length(pp, p - pp);
                }
-             INF("imgurl=%s", cp->image.imgurl);
+             INF("%u imgurl=%s", cp->number, cp->image.imgurl);
              {
                 cp->ecu = ecore_con_url_new(cp->image.imgurl);
                 ecore_con_url_data_set(cp->ecu, &cp->image);

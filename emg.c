@@ -246,6 +246,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            Search_Result *sr;
 
            ci = ecore_con_url_data_get(ev->url_con);
+           ci->ecu = NULL;
            INF("IMGURL DONE: %s", ci->imgurl);
            sr = ci->parent;
            if (sr->it) elm_genlist_item_update(sr->it);
@@ -257,12 +258,11 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            Comic_Series *cs;
 
            ci = ecore_con_url_data_get(ev->url_con);
+           ci->ecu = NULL;
            INF("IMGURL DONE: %s", ci->imgurl);
            cs = ci->parent;
            if (cs != cs->e->sv.cs) break;
            series_view_image_set(cs->e, ci->buf);
-           ecore_con_url_free(ci->ecu);
-           ci->ecu = NULL;
            break;
         }
       case IDENTIFIER_COMIC_PAGE_IMAGE:
@@ -271,9 +271,11 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            Comic_Page *cp;
 
            ci = ecore_con_url_data_get(ev->url_con);
+           ci->ecu = NULL;
            INF("IMGURL DONE: %s", ci->imgurl);
            cp = ci->parent;
            comic_view_readahead_ensure(&e);
+           comic_view_readbehind_ensure(&e);
            if (!comic_page_current(cp)) break;
            comic_view_page_set(&e, cp);
            break;
@@ -283,6 +285,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            Search_Name *sn;
 
            sn = ecore_con_url_data_get(ev->url_con);
+           sn->ecu = NULL;
            elm_object_text_set(sn->e->sw.progress, "Complete");
            elm_progressbar_value_set(sn->e->sw.progress, 100);
            sn->done = EINA_TRUE;
@@ -297,6 +300,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 
            cs = ecore_con_url_data_get(ev->url_con);
            cs->done = EINA_TRUE;
+           cs->ecu = NULL;
            comic_series_parser(cs);
            if (e.sv.cs == cs)
              series_view_populate(cs);
@@ -305,12 +309,20 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            break;
         }
       case IDENTIFIER_COMIC_PAGE:
-        comic_view_readahead_ensure(&e);
+        {
+           Comic_Page *cp;
+
+           cp = ecore_con_url_data_get(ev->url_con);
+           cp->ecu = NULL;
+           comic_view_readahead_ensure(&e);
+           INF("PAGE DONE: %s", ecore_con_url_url_get(ev->url_con));
+        }
         break;
       default:
         break;
      }
 
+   ecore_con_url_free(ev->url_con);
    return ECORE_CALLBACK_RENEW;
 }
 
