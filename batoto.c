@@ -45,9 +45,16 @@ batoto_search_name_cb(Search_Name *sn)
              sr->href = eina_stringshare_add_length(index_start, p - index_start);
              INF("href=%s", sr->href);
              break;
-           case 1: /* result link */
+           case 1: /* result name */
              sr = EINA_INLIST_CONTAINER_GET(sn->results->last, Search_Result);
-             sr->name = eina_stringshare_add_length((char*)index_start, p - index_start);
+             {
+                char *buf;
+
+                buf = strndupa(index_start, p - index_start);
+                buf = evas_textblock_text_markup_to_utf8(NULL, buf);
+                sr->name = eina_stringshare_add(buf);
+                free(buf);
+             }
              sr->namelen = p - index_start;
              INF("name=%s", sr->name);
              sr->it = elm_genlist_item_append(sn->e->sw.list, &sn->e->sw.itc, sr, NULL, 0, (Evas_Smart_Cb)NULL, sr);
@@ -193,7 +200,14 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
                   cc->decimal = EINA_TRUE;
                }
              if (!cc->name)
-               cc->name = eina_stringshare_add_length(buf, p - buf);
+               {
+                  char *buf;
+
+                  buf = strndupa(buf, p - buf);
+                  buf = evas_textblock_text_markup_to_utf8(NULL, buf);
+                  cc->name = eina_stringshare_add(buf);
+                  free(buf);
+               }
           }
         INF("chapter: %g - %s: %s", cc->number, cc->name, cc->href);
      }
