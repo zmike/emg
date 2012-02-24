@@ -15,10 +15,13 @@ void
 series_view_populate(Comic_Series *cs)
 {
    Comic_Chapter *cc = NULL;
+   Eina_Inlist *l;
    unsigned int count = 0;
 
    //DBG("cs=%s", cs->name);
-   EINA_INLIST_FOREACH(cs->populate_job ?: cs->chapters, cc)
+   l = cs->populate_job ?: cs->chapters;
+   cc = EINA_INLIST_CONTAINER_GET(l, Comic_Chapter);
+   for (; cc; cc = comic_chapter_next_get(cc))
      {
         elm_genlist_item_append(cs->e->sv.list, &cs->e->sv.itc, cc, NULL, 0, (Evas_Smart_Cb)NULL, NULL);
         if (++count == SERIES_VIEW_POPULATE_COUNT) break;
@@ -48,6 +51,7 @@ series_view_list_text_cb(Comic_Chapter *cc, Evas_Object *obj __UNUSED__, const c
    else
      snprintf(buf, size, "Chapter %d%s%s%s%s%s%s", (int)cc->number, cc->date || cc->name ? ":" : "",
               cc->name ? " " : "", cc->name ?: "", cc->date ? " (" : "", cc->date ?: "", cc->date ? ")" : "");
+   //INF("CHAPTER NAME SET: %s", buf);
    return buf;
 }
 
@@ -159,14 +163,13 @@ series_view_image_set(EMG *e, Eina_Binbuf *buf)
    if (!e->sv.img)
      {
         e->sv.img = elm_icon_add(e->win);
-        WEIGHT(e->sv.img, EVAS_HINT_EXPAND, 0);
+        WEIGHT(e->sv.img, 1, 1);
+        FILL(e->sv.img);
         elm_icon_animated_set(e->sv.img, EINA_TRUE);
-        elm_icon_scale_set(e->sv.img, 0, 0);
         elm_icon_aspect_fixed_set(e->sv.img, EINA_TRUE);
         elm_icon_fill_outside_set(e->sv.img, EINA_FALSE);
         elm_box_pack_start(e->sv.box, e->sv.img);
      }
-   DBG("changing series view image");
    elm_icon_memfile_set(e->sv.img, eina_binbuf_string_get(buf), eina_binbuf_length_get(buf), NULL, NULL);
    evas_object_show(e->sv.img);
 }

@@ -65,6 +65,23 @@ comic_page_fetch(Comic_Page *cp)
 }
 
 void
+comic_page_data_del(Comic_Page *cp)
+{
+   if (!cp->image.buf) return;
+   eina_binbuf_free(cp->image.buf);
+   cp->image.buf = NULL;
+   cp->cc->pages_fetched--;
+}
+
+void
+comic_page_image_del(Comic_Page *cp)
+{
+    if (cp->nf_it) elm_object_item_del(cp->nf_it);
+    cp->obj = cp->scr = NULL;
+    cp->nf_it = NULL;
+}
+
+void
 comic_page_parser(Comic_Page *cp)
 {
    cp->provider.data_cb(cp);

@@ -180,6 +180,7 @@ struct Comic_Page
    unsigned int hreflen;
    unsigned int number;
    Evas_Object *obj;
+   Evas_Object *scr;
    Elm_Object_Item *nf_it;
    Comic_Chapter *cc;
    Comic_Image image;
@@ -273,10 +274,13 @@ Comic_Series *comic_series_new(Search_Result *sr);
 void comic_series_parser(Comic_Series *cs);
 
 Comic_Chapter *comic_chapter_new(Comic_Series *cs, Eina_Bool before);
-void comic_chapter_clear(Comic_Chapter *cc);
+void comic_chapter_images_clear(Comic_Chapter *cc);
+void comic_chapter_data_clear(Comic_Chapter *cc);
 Comic_Chapter *comic_chapter_prev_get(Comic_Chapter *cc);
 Comic_Chapter *comic_chapter_next_get(Comic_Chapter *cc);
 
+void comic_page_image_del(Comic_Page *cp);
+void comic_page_data_del(Comic_Page *cp);
 Comic_Page *comic_page_new(Comic_Chapter *cc, unsigned int id);
 void comic_page_fetch(Comic_Page *page);
 void comic_page_parser(Comic_Page *cp);
@@ -284,6 +288,7 @@ Comic_Page *comic_page_prev_get(Comic_Page *cp);
 Comic_Page *comic_page_next_get(Comic_Page *cp);
 Eina_Bool comic_page_current(Comic_Page *cp);
 
+void batoto_search_init_cb(Search_Name *sn);
 void mangareader_search_init_cb(Search_Name *sn);
 
 #endif

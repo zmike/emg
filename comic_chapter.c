@@ -16,19 +16,26 @@ comic_chapter_new(Comic_Series *cs, Eina_Bool before)
 }
 
 void
-comic_chapter_clear(Comic_Chapter *cc)
+comic_chapter_data_clear(Comic_Chapter *cc)
 {
    Comic_Page *cp;
 
+   if (!cc->pages) return;
+   EINA_INLIST_FOREACH(cc->pages, cp)
+     comic_page_data_del(cp);
+}
+
+void
+comic_chapter_images_clear(Comic_Chapter *cc)
+{
+   Comic_Page *cp;
+
+   if (!cc->pages) return;
    EINA_INLIST_FOREACH(cc->pages, cp)
      {
-        if (cp->nf_it) elm_object_item_del(cp->nf_it);
-        if (cp->image.buf) eina_binbuf_free(cp->image.buf);
-        cp->obj = NULL;
-        cp->image.buf = NULL;
-        cp->nf_it = NULL;
+        comic_page_image_del(cp);
+        DBG("DEL IMG: %u", cp->number);
      }
-   cc->pages_fetched = 0;
 }
 
 

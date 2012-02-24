@@ -240,6 +240,13 @@ window_key(void *data __UNUSED__, Evas *evas __UNUSED__, Evas_Object *obj __UNUS
      }
 }
 
+static void
+_win_del(void *data __UNUSED__, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__)
+{
+   evas_object_unref(e.cv.prev);
+   evas_object_unref(e.cv.next);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -252,11 +259,13 @@ main(int argc, char *argv[])
    ecore_con_url_init();
    elm_init(argc, argv);
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
+   elm_scroll_bounce_enabled_set(EINA_FALSE);
    _emg_log_dom = eina_log_domain_register("emg", EINA_COLOR_HIGH EINA_COLOR_CYAN);
    eina_log_domain_level_set("emg", EINA_LOG_LEVEL_DBG);
 
    /* image win */
    e.win = win = elm_win_add(NULL, NULL, ELM_WIN_BASIC);
+   evas_object_smart_callback_add(win, "delete,request", _win_del, NULL);
    elm_win_autodel_set(win, EINA_TRUE);
    elm_win_screen_constrain_set(win, EINA_TRUE);
 
@@ -304,7 +313,7 @@ main(int argc, char *argv[])
    elm_entry_scrollbar_policy_set(entry, ELM_SCROLLER_POLICY_AUTO, ELM_SCROLLER_POLICY_OFF);
    elm_entry_cursor_end_set(entry);
    /* TEMP */
-   elm_entry_entry_set(entry, "one piece");
+   elm_entry_entry_set(entry, "tower of god");
 
    elm_entry_select_all(entry);
 
@@ -354,6 +363,7 @@ main(int argc, char *argv[])
    evas_object_show(e.cv.nf);
 
    e.cv.prev = elm_button_add(win);
+   evas_object_ref(e.cv.prev);
    FILL(e.cv.prev);
    ic = elm_icon_add(win);
    FILL(ic);
@@ -363,6 +373,7 @@ main(int argc, char *argv[])
    evas_object_smart_callback_add(e.cv.prev, "clicked", (Evas_Smart_Cb)comic_view_page_prev, &e);
 
    e.cv.next = elm_button_add(win);
+   evas_object_ref(e.cv.next);
    FILL(e.cv.next);
    ic = elm_icon_add(win);
    FILL(ic);
@@ -372,7 +383,6 @@ main(int argc, char *argv[])
    evas_object_smart_callback_add(e.cv.next, "clicked", (Evas_Smart_Cb)comic_view_page_next, &e);
 
    e.sv.scr = scr = elm_scroller_add(win);
-   elm_scroller_bounce_set(scr, EINA_FALSE, EINA_FALSE);
    elm_scroller_policy_set(scr, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
    EXPAND(scr);
    FILL(scr);
@@ -469,7 +479,6 @@ main(int argc, char *argv[])
    e.sv.list = list = elm_genlist_add(e.win);
    EXPAND(list);
    FILL(list);
-   elm_genlist_bounce_set(list, EINA_FALSE, EINA_FALSE);
    elm_genlist_compress_mode_set(list, EINA_TRUE);
    elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
    series_view_list_init(&e, list);
@@ -484,7 +493,6 @@ main(int argc, char *argv[])
    e.sw.list = list = elm_genlist_add(e.win);
    EXPAND(list);
    FILL(list);
-   elm_genlist_bounce_set(list, EINA_FALSE, EINA_FALSE);
    elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
    e.sw.nf_it = elm_naviframe_item_simple_push(e.nf, list);
    search_name_list_init(&e, list);
@@ -511,7 +519,8 @@ main(int argc, char *argv[])
    evas_object_resize(win, 640, 712);
    elm_win_center(win, EINA_TRUE, EINA_TRUE);
 
-   e.providers = eina_list_append(e.providers, mangareader_search_init_cb);
+   //e.providers = eina_list_append(e.providers, mangareader_search_init_cb);
+   e.providers = eina_list_append(e.providers, batoto_search_init_cb);
    search_view_show(&e, NULL, NULL);
 
    elm_run();
