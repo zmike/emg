@@ -201,12 +201,12 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
                }
              if (!cc->name)
                {
-                  char *buf;
+                  char *b;
 
-                  buf = strndupa(buf, p - buf);
-                  buf = evas_textblock_text_markup_to_utf8(NULL, buf);
-                  cc->name = eina_stringshare_add(buf);
-                  free(buf);
+                  b = strndupa(buf, p - buf);
+                  b = evas_textblock_text_markup_to_utf8(NULL, b);
+                  cc->name = eina_stringshare_add(b);
+                  free(b);
                }
           }
         INF("chapter: %g - %s: %s", cc->number, cc->name, cc->href);
