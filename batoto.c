@@ -71,30 +71,30 @@ batoto_search_name_cb(Search_Name *sn)
 }
 #define BUFCHECK(NUM) \
         if ((unsigned int)((p + NUM) - base) >= size) abort(); /* FIXME */ \
-        buf = p + NUM
+        data = p + NUM
 
 #define BUFCHR(CHAR) \
-        p = strchr(buf, CHAR); \
+        p = strchr(data, CHAR); \
         if (!p) abort() /* FIXME */
 
 
 static void
 batoto_comic_series_data_cb2(Comic_Series *cs)
 {
-   const char *base, *buf, *p;
+   const char *base, *data, *p;
    size_t size;
    int chapters = 0;
    Eina_Bool use_ch = EINA_FALSE;
    Comic_Chapter *cc = NULL;
 
-   base = buf = eina_strbuf_string_get(cs->buf);
+   base = data = eina_strbuf_string_get(cs->buf);
    size = eina_strbuf_length_get(cs->buf);
-   buf += cs->idx[0];
+   data += cs->idx[0];
    chapters = (size - BATOTO_SERIES_INDEX_TRAILING - BATOTO_SERIES_INDEX_JUMP) / BATOTO_SERIES_INDEX_ROW_SIZE;
-   p = strstr(buf, "<tr");
+   p = strstr(data, "<tr");
    if (!p) abort();
    BUFCHECK(11);
-   if (buf[0] == 'r') buf -= 11;
+   if (data[0] == 'r') data -= 11;
    while (1)
      {
         Comic_Page *cp;
@@ -103,45 +103,45 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
         Eina_Bool update = EINA_FALSE, decimal = EINA_FALSE;
         double number = 0;
 
-        p = strstr(buf, "<tr");
+        p = strstr(data, "<tr");
         if (!p) abort(); /* FIXME */
         BUFCHECK(11);
-        if (!memcmp(buf, "chap_avl", 8))
+        if (!memcmp(data, "chap_avl", 8))
           break; /* DONE! */
         BUFCHECK(20);
-        if (memcmp(buf, "English", 7))
+        if (memcmp(data, "English", 7))
           {
-             p = buf;
+             p = data;
              BUFCHECK(BATOTO_SERIES_INDEX_ROW_SIZE - 20);
              continue;
           }
         BUFCHECK(85);
-        if (buf[0] != 'h') abort();
+        if (data[0] != 'h') abort();
         BUFCHR('"');
-        href = buf, hrefend = p;
+        href = data, hrefend = p;
         BUFCHECK(3);
         BUFCHR('>');
         BUFCHECK(2);
-        if ((buf[0] == 'V') || (buf[0] == 'v'))
+        if ((data[0] == 'V') || (data[0] == 'v'))
           {
              /* Vol.X Ch.Y */
              BUFCHR(' ');
              BUFCHECK(1);
           }
         /* Ch.Y */
-        p = buf;
-        if (memcmp(buf, "Ch.", 3))
+        p = data;
+        if (memcmp(data, "Ch.", 3))
           decimal = EINA_TRUE;
         else
           {
              BUFCHECK(3);
-             if (isdigit(buf[0]))
+             if (isdigit(data[0]))
                {
-                  number = strtod(buf, (char**)&p);
-                  if (p - buf > 2)
+                  number = strtod(data, (char**)&p);
+                  if (p - data > 2)
                     {
-                       buf = memchr(buf, '.', p - buf);
-                       if (buf) decimal = EINA_TRUE;
+                       data = memchr(data, '.', p - data);
+                       if (data) decimal = EINA_TRUE;
                     }
                }
           }
@@ -186,27 +186,27 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
              cc->number = ccn->decimal ? ((int)ccn->number) : (int)ccn->number - 1;
              if (cc->decimal) cc->number += 0.5;
           }
-        buf = p;
+        data = p;
         BUFCHR(' ');
         BUFCHECK(1);
         BUFCHR('<');
-        if ((p - buf > 1) && ((p - buf != 11) || memcmp(buf, "Read Online", 11)))
+        if ((p - data > 1) && ((p - data != 11) || memcmp(data, "Read Online", 11)))
           {
-             if (!memcmp(buf, "Ch.", 3))
+             if (!memcmp(data, "Ch.", 3))
                {
-                  buf += 3;
+                  data += 3;
                   cc->number--;
                   cs->total--;
                   cc->decimal = EINA_TRUE;
                }
              if (!cc->name)
                {
-                  char *b;
+                  char *data;
 
-                  b = strndupa(buf, p - buf);
-                  b = evas_textblock_text_markup_to_utf8(NULL, b);
-                  cc->name = eina_stringshare_add(b);
-                  free(b);
+                  data = strndupa(data, p - data);
+                  data = evas_textblock_text_markup_to_utf8(NULL, data);
+                  cc->name = eina_stringshare_add(data);
+                  free(data);
                }
           }
         INF("chapter: %g - %s: %s", cc->number, cc->name, cc->href);
