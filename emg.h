@@ -119,6 +119,7 @@ struct Comic_Provider
 {
    const char *url; /* base url */
    const char *search_url; /* actually a fmt string */
+   unsigned char priority; /* higher is better */
    size_t search_index;
    unsigned int search_name_count;
    unsigned int index_start[10];
@@ -289,4 +290,5 @@ Eina_Bool comic_page_current(Comic_Page *cp);
 void batoto_search_init_cb(Search_Name *sn);
 void mangareader_search_init_cb(Search_Name *sn);
 
+const char *util_markup_to_utf8(const char *start, const char *p);
 #endif

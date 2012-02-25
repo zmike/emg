@@ -55,3 +55,5 @@
 
 #define MANGAREADER_SEARCH_URL "http://www.mangareader.net/search/?w=%s"
 #define MANGAREADER_URL "http://www.mangareader.net"
+
+#define MANGAREADER_PROVIDER_PRIORITY 5

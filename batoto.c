@@ -10,6 +10,7 @@ static void batoto_series_init_cb(Comic_Series *cs);
 static Comic_Provider search_provider =
 {
    .url = BATOTO_URL,
+   .priority = BATOTO_PROVIDER_PRIORITY,
    .search_url = BATOTO_SEARCH_URL,
    .search_index = BATOTO_SEARCH_INDEX,
    .index_start[0] = BATOTO_SEARCH_INDEX_START,
@@ -34,6 +35,7 @@ static Comic_Provider search_provider =
 static Comic_Provider series_provider =
 {
    .url = BATOTO_URL,
+   .priority = BATOTO_PROVIDER_PRIORITY,
    .search_index = BATOTO_SERIES_INDEX,
    .index_start[0] = BATOTO_SERIES_INDEX_START,
    .index_char[0] = BATOTO_SERIES_INDEX_START_CHAR,
@@ -58,6 +60,7 @@ static Comic_Provider series_provider =
 static Comic_Provider page_provider =
 {
    .url = BATOTO_URL,
+   .priority = BATOTO_PROVIDER_PRIORITY,
    .search_index = BATOTO_PAGE_INDEX,
    .data_cb = (Provider_Data_Cb)batoto_comic_page_data_cb
 };
@@ -109,14 +112,7 @@ batoto_search_name_cb(Search_Name *sn)
              break;
            case 1: /* result name */
              sr = EINA_INLIST_CONTAINER_GET(sn->results->last, Search_Result);
-             {
-                char *buf;
-
-                buf = strndupa(index_start, p - index_start);
-                buf = evas_textblock_text_markup_to_utf8(NULL, buf);
-                sr->name = eina_stringshare_add(buf);
-                free(buf);
-             }
+             sr->name = util_markup_to_utf8(index_start, p);
              sr->namelen = p - index_start;
              INF("name=%s", sr->name);
              sr->it = elm_genlist_item_append(sn->e->sw.list, &sn->e->sw.itc, sr, NULL, 0, (Evas_Smart_Cb)NULL, sr);
@@ -262,14 +258,7 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
                   cc->decimal = EINA_TRUE;
                }
              if (!cc->name)
-               {
-                  char *buf;
-
-                  buf = strndupa(data, p - data);
-                  buf = evas_textblock_text_markup_to_utf8(NULL, buf);
-                  cc->name = eina_stringshare_add(buf);
-                  free(buf);
-               }
+               cc->name = util_markup_to_utf8(data, p);
           }
         INF("chapter: %g - %s: %s", cc->number, cc->name, cc->href);
      }

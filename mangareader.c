@@ -10,6 +10,7 @@ static void mangareader_series_init_cb(Comic_Series *cs);
 static Comic_Provider search_provider =
 {
    .url = MANGAREADER_URL,
+   .priority = MANGAREADER_PROVIDER_PRIORITY,
    .search_url = MANGAREADER_SEARCH_URL,
    .search_index = MANGAREADER_SEARCH_INDEX,
    .search_name_count = MANGAREADER_SEARCH_INDEX_NAME_COUNT,
@@ -33,6 +34,7 @@ static Comic_Provider search_provider =
 static Comic_Provider series_provider =
 {
    .url = MANGAREADER_URL,
+   .priority = MANGAREADER_PROVIDER_PRIORITY,
    .search_index = MANGAREADER_SERIES_INDEX,
    .index_start[0] = MANGAREADER_SERIES_INDEX_START,
    .index_char[0] = MANGAREADER_SERIES_INDEX_START_CHAR,
@@ -57,6 +59,7 @@ static Comic_Provider series_provider =
 static Comic_Provider page_provider =
 {
    .url = MANGAREADER_URL,
+   .priority = MANGAREADER_PROVIDER_PRIORITY,
    .search_index = MANGAREADER_PAGE_INDEX,
    .index_start[0] = MANGAREADER_PAGE_INDEX_START,
    .index_char[0] = MANGAREADER_PAGE_INDEX_START_CHAR,
