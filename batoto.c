@@ -148,7 +148,6 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
    base = data = eina_strbuf_string_get(cs->buf);
    size = eina_strbuf_length_get(cs->buf);
    data += cs->idx[0];
-   chapters = (size - BATOTO_SERIES_INDEX_TRAILING - BATOTO_SERIES_INDEX_JUMP) / BATOTO_SERIES_INDEX_ROW_SIZE;
    p = strstr(data, "<tr");
    if (!p) abort();
    BUFCHECK(11);
@@ -163,7 +162,10 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
 
         p = strstr(data, "<tr");
         if (!p) abort(); /* FIXME */
+        if (!chapters)
+          chapters = (size - (p - base) - BATOTO_SERIES_INDEX_TRAILING) / BATOTO_SERIES_INDEX_ROW_SIZE;
         BUFCHECK(11);
+        if (!memcmp(data, "header", 6)) continue;
         if (!memcmp(data, "chap_avl", 8))
           break; /* DONE! */
         BUFCHECK(20);
