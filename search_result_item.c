@@ -13,6 +13,7 @@ _search_result_item_update(Search_Result_Item *sri, Search_Result *sr, Eina_Bool
     if (sr->VAR || force) \
       sri->VAR = sr->VAR
 
+    sr->sri = sri;
     if (sri->sr && (sri->sr->provider->priority > sr->provider->priority))
       {
          if (!sri->tags)
@@ -61,7 +62,7 @@ search_result_item_result_add(Search_Result *sr)
 {
    Eina_List *l;
    Search_Result_Item *sri;
-   
+
    EINA_LIST_FOREACH(sr->e->sw.results, l, sri)
      {
         if (strcasecmp(sr->name, sri->name)) continue;
