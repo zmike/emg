@@ -224,8 +224,6 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
                   cc = ccp;
                }
           }
-        if (cs->total > 45)
-          INF("X");
         if ((!decimal) && (!update)) cs->total++;
         if (!update)
           {
@@ -237,11 +235,6 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
              eina_stringshare_del(cc->href);
              cc->href = eina_stringshare_add_length(href, hrefend - href);
           }
-        if (!update)
-          {
-             cp = comic_page_new(cc, 1);
-             cp->href = eina_stringshare_ref(cc->href);
-          }
         if (!use_ch)
           {
              Comic_Chapter *ccn;
@@ -249,13 +242,28 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
              ccn = comic_chapter_next_get(cc);
              if (ccn)
                cc->number = ccn->decimal ? ((int)ccn->number) : (int)ccn->number - 1;
-             else
-               cc->number = number;
+          }
+        if (!cc->number) cc->number = number;
+        if (!update)
+          {
+             cp = comic_page_new(cc, 1);
+             cp->href = eina_stringshare_ref(cc->href);
           }
         data = p;
         if (isdigit(data[0]))
           {
              BUFCHR(' ');
+          }
+        if (p[0] == ' ')
+          {
+             BUFCHECK(1);
+          }
+        if (data[0] == ':')
+          {
+             BUFCHR(' ');
+          }
+        if (p[0] == ' ')
+          {
              BUFCHECK(1);
           }
         BUFCHR('<');
