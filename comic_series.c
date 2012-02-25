@@ -29,12 +29,11 @@ comic_series_new(Search_Result *sr)
         Search_Name *sn;
 
         sn = (Search_Name*)sr->search;
-        sn->provider.init_cb(cs);
+        sn->provider->init_cb(cs);
      }
    /* FIXME: use aggregator to ensure all chapters */
    cs->total = sr->total;
    cs->name = eina_stringshare_ref(sr->name);
-   cs->provider.url = sr->provider_url;
    cs->namelen = sr->namelen;
    cs->image.identifier = IDENTIFIER_COMIC_IMAGE;
    cs->image.parent = cs;
@@ -48,5 +47,5 @@ comic_series_new(Search_Result *sr)
 void
 comic_series_parser(Comic_Series *cs)
 {
-   cs->provider.data_cb(cs);
+   cs->provider->data_cb(cs);
 }

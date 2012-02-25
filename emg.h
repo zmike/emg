@@ -139,8 +139,7 @@ struct Search_Name
    unsigned int namelen;
    unsigned int snamelen; /* search escaped namelen */
    unsigned int idx[2]; /* position, iterator */
-   /* inherited from provider */
-   Comic_Provider provider;
+   Comic_Provider *provider;
    Eina_Inlist *results;
    unsigned int result_count;
    Eina_Bool done : 1;
@@ -162,7 +161,6 @@ struct Search_Result
    EMG *e;
    unsigned int *search; /* deref to determine parent type */
    Elm_Object_Item *it; /* list item */
-   const char *provider_url;
    const char *name;
    unsigned int namelen;
    const char *href;
@@ -185,7 +183,7 @@ struct Comic_Page
    Comic_Chapter *cc;
    Comic_Image image;
    unsigned int idx[2]; /* position, iterator */
-   Comic_Provider provider;
+   Comic_Provider *provider;
    Eina_Strbuf *buf;
    Ecore_Con_Url *ecu;
    Eina_Bool done : 1;
@@ -227,7 +225,7 @@ struct Comic_Series
    Comic_Chapter *current;
    Comic_Image image;
    unsigned int idx[2]; /* position, iterator */
-   Comic_Provider provider;
+   Comic_Provider *provider;
    Eina_Bool done : 1;
    Eina_Bool completed : 1;
 };

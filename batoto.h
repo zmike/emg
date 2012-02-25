@@ -45,7 +45,6 @@
 #define BATOTO_PAGE_INDEX 4000
 /* estimates */
 #define BATOTO_PAGE_INDEX_CHAPTER_JUMP 120
-#define BATOTO_PAGE_STR "p's ad"
 
 
 #define BATOTO_REPLACE_STR "%20"

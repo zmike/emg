@@ -35,7 +35,7 @@ comic_page_new(Comic_Chapter *cc, unsigned int id)
      }
    if (!in)
      cc->pages = eina_inlist_append(cc->pages, EINA_INLIST_GET(cp));
-   cc->cs->provider.init_cb(cp);
+   cc->cs->provider->init_cb(cp);
    return cp;
 }
 
@@ -84,7 +84,7 @@ comic_page_image_del(Comic_Page *cp)
 void
 comic_page_parser(Comic_Page *cp)
 {
-   cp->provider.data_cb(cp);
+   cp->provider->data_cb(cp);
 }
 
 Comic_Page *

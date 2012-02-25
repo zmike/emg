@@ -1,5 +1,67 @@
 #include "batoto.h"
 
+static void batoto_search_name_cb(Search_Name *sn);
+static void batoto_comic_series_data_cb2(Comic_Series *cs);
+static void batoto_comic_series_data_cb(Comic_Series *cs);
+static void batoto_comic_page_data_cb(Comic_Page *cp);
+static void batoto_comic_page_init_cb(Comic_Page *cp);
+static void batoto_series_init_cb(Comic_Series *cs);
+
+static Comic_Provider search_provider =
+{
+   .url = BATOTO_URL,
+   .search_url = BATOTO_SEARCH_URL,
+   .search_index = BATOTO_SEARCH_INDEX,
+   .index_start[0] = BATOTO_SEARCH_INDEX_START,
+   .index_char[0] = BATOTO_SEARCH_INDEX_START_CHAR,
+   .index_start[1] = BATOTO_SEARCH_INDEX_POST_HREF,
+   .index_char[1] = BATOTO_SEARCH_INDEX_POST_HREF_CHAR,
+   .index_start[2] = BATOTO_SEARCH_INDEX_POST_NAME,
+   .index_char[2] = BATOTO_SEARCH_INDEX_POST_NAME_CHAR,
+   .index_start[3] = BATOTO_SEARCH_INDEX_POST_AUTHOR,
+   .index_char[3] = BATOTO_SEARCH_INDEX_POST_AUTHOR_CHAR,
+   .index_start[4] = BATOTO_SEARCH_INDEX_POST_VIEWS,
+   .index_char[4] = BATOTO_SEARCH_INDEX_POST_VIEWS_CHAR,
+   .index_start[5] = BATOTO_SEARCH_INDEX_POST_FOLLOWS,
+   .index_char[5] = BATOTO_SEARCH_INDEX_POST_FOLLOWS_CHAR,
+   .index_start[6] = BATOTO_SEARCH_INDEX_END,
+   .index_char[6] = BATOTO_SEARCH_INDEX_END_CHAR,
+   .replace_str = BATOTO_REPLACE_STR,
+   .data_cb = BATOTO_DATA_CB,
+   .init_cb = BATOTO_INIT_CB
+};
+
+static Comic_Provider series_provider =
+{
+   .url = BATOTO_URL,
+   .search_index = BATOTO_SERIES_INDEX,
+   .index_start[0] = BATOTO_SERIES_INDEX_START,
+   .index_char[0] = BATOTO_SERIES_INDEX_START_CHAR,
+   .index_start[1] = BATOTO_SERIES_INDEX_IMAGE,
+   .index_char[1] = BATOTO_SERIES_INDEX_IMAGE_CHAR,
+   .index_start[2] = BATOTO_SERIES_INDEX_ALT_NAME,
+   .index_char[2] = BATOTO_SERIES_INDEX_ALT_NAME_CHAR,
+   .index_start[3] = BATOTO_SERIES_INDEX_AUTHOR,
+   .index_char[3] = BATOTO_SERIES_INDEX_AUTHOR_CHAR,
+   .index_start[4] = BATOTO_SERIES_INDEX_ARTIST,
+   .index_char[4] = BATOTO_SERIES_INDEX_ARTIST_CHAR,
+   .index_start[5] = BATOTO_SERIES_INDEX_AUTHOR,
+   .index_char[5] = BATOTO_SERIES_INDEX_AUTHOR_CHAR,
+   .index_start[6] = BATOTO_SERIES_INDEX_PRE_COMPLETED,
+   .index_char[6] = BATOTO_SERIES_INDEX_PRE_COMPLETED_CHAR,
+   .index_start[7] = BATOTO_SERIES_INDEX_DESC,
+   .index_char[7] = BATOTO_SERIES_INDEX_DESC_CHAR,
+   .data_cb = (Provider_Data_Cb)batoto_comic_series_data_cb,
+   .init_cb = (Provider_Init_Cb)batoto_comic_page_init_cb
+};
+
+static Comic_Provider page_provider =
+{
+   .url = BATOTO_URL,
+   .search_index = BATOTO_PAGE_INDEX,
+   .data_cb = (Provider_Data_Cb)batoto_comic_page_data_cb
+};
+
 static void
 batoto_search_name_cb(Search_Name *sn)
 {
@@ -12,30 +74,30 @@ batoto_search_name_cb(Search_Name *sn)
    if ((!sn->idx[0]) && (!sn->idx[1]))
      {
         char *s;
-        sn->idx[0] = sn->provider.search_index + (2 * sn->snamelen) + sn->namelen;
+        sn->idx[0] = sn->provider->search_index + (2 * sn->snamelen) + sn->namelen;
         for (s = strchr(sn->name, '\''); s; s = strchr(s + 1, '\''))
           sn->idx[0] += (5 * 2);
      }
-   for (; (sn->idx[1] < sizeof(sn->provider.index_start)) && sn->provider.index_start[sn->idx[1]]; sn->idx[1]++)
+   for (; (sn->idx[1] < sizeof(sn->provider->index_start)) && sn->provider->index_start[sn->idx[1]]; sn->idx[1]++)
      {
         Search_Result *sr = NULL;
         const char *p, *index_start;
 
-        if (sn->idx[0] + sn->provider.index_start[sn->idx[1]] + 8 > (unsigned int)size)
+        if (sn->idx[0] + sn->provider->index_start[sn->idx[1]] + 8 > (unsigned int)size)
           {
              search_view_count_update(sn);
              return;
           }
-        index_start = data + sn->idx[0] + sn->provider.index_start[sn->idx[1]];
+        index_start = data + sn->idx[0] + sn->provider->index_start[sn->idx[1]];
         if ((!sn->idx[1]) && memcmp(index_start, "http", 4))
           {
              sn->done = EINA_TRUE;
              search_view_count_update(sn);
              return;
           }
-        if (sn->provider.index_char[sn->idx[1]])
+        if (sn->provider->index_char[sn->idx[1]])
           {
-             p = memchr(index_start, sn->provider.index_char[sn->idx[1]], size - sn->idx[0]);
+             p = memchr(index_start, sn->provider->index_char[sn->idx[1]], size - sn->idx[0]);
              if (!p) return;
           }
         switch (sn->idx[1])
@@ -201,12 +263,12 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
                }
              if (!cc->name)
                {
-                  char *data;
+                  char *buf;
 
-                  data = strndupa(data, p - data);
-                  data = evas_textblock_text_markup_to_utf8(NULL, data);
-                  cc->name = eina_stringshare_add(data);
-                  free(data);
+                  buf = strndupa(data, p - data);
+                  buf = evas_textblock_text_markup_to_utf8(NULL, buf);
+                  cc->name = eina_stringshare_add(buf);
+                  free(buf);
                }
           }
         INF("chapter: %g - %s: %s", cc->number, cc->name, cc->href);
@@ -243,15 +305,15 @@ batoto_comic_series_data_cb(Comic_Series *cs)
    data = eina_strbuf_string_get(cs->buf);
    size = eina_strbuf_length_get(cs->buf);
    if ((!cs->idx[0]) && (!cs->idx[1]))
-     cs->idx[0] = cs->provider.search_index;
+     cs->idx[0] = cs->provider->search_index;
    //DBG("(idx=%u,size=%d)", cs->idx[0], size);
    /* discard unneeded bytes, hooray */
-   for (; (cs->idx[1] < sizeof(cs->provider.index_start)) && (cs->provider.index_start[cs->idx[1]] || cs->provider.index_char[cs->idx[1]]); cs->idx[1]++)
+   for (; (cs->idx[1] < sizeof(cs->provider->index_start)) && (cs->provider->index_start[cs->idx[1]] || cs->provider->index_char[cs->idx[1]]); cs->idx[1]++)
      {
         const char *p, *index_start;
 
         //DBG("(idx=%u,size=%d)", cs->idx[0], size);
-        if (cs->idx[0] + cs->provider.index_start[cs->idx[1]] > (unsigned int)size)
+        if (cs->idx[0] + cs->provider->index_start[cs->idx[1]] > (unsigned int)size)
           {
              /*
              char *buf;
@@ -260,10 +322,10 @@ batoto_comic_series_data_cb(Comic_Series *cs)
              */
              return;
           }
-        index_start = data + cs->idx[0] + cs->provider.index_start[cs->idx[1]];
-        if (cs->provider.index_char[cs->idx[1]])
+        index_start = data + cs->idx[0] + cs->provider->index_start[cs->idx[1]];
+        if (cs->provider->index_char[cs->idx[1]])
           {
-             p = memchr(index_start, cs->provider.index_char[cs->idx[1]], size - cs->idx[0]);
+             p = memchr(index_start, cs->provider->index_char[cs->idx[1]], size - cs->idx[0]);
              if (!p) return;
           }
         switch (cs->idx[1])
@@ -349,7 +411,7 @@ batoto_comic_page_data_cb(Comic_Page *cp)
    data = eina_strbuf_string_get(cp->buf);
    size = eina_strbuf_length_get(cp->buf);
    if ((!cp->idx[0]) && (!cp->idx[1]))
-     cp->idx[0] = cp->provider.search_index + (cp->cc->cs->total * BATOTO_PAGE_INDEX_CHAPTER_JUMP);
+     cp->idx[0] = cp->provider->search_index + (cp->cc->cs->total * BATOTO_PAGE_INDEX_CHAPTER_JUMP);
    if (cp->idx[0] >= size) return;
 
    index_start = data + cp->idx[0];
@@ -512,57 +574,17 @@ batoto_comic_page_data_cb(Comic_Page *cp)
 static void
 batoto_comic_page_init_cb(Comic_Page *cp)
 {
-   cp->provider.url = eina_stringshare_add(BATOTO_URL);
-   cp->provider.search_index = BATOTO_PAGE_INDEX;
-   cp->provider.data_cb = (Provider_Data_Cb)batoto_comic_page_data_cb;
+   cp->provider = &page_provider;
 }
 
 static void
 batoto_series_init_cb(Comic_Series *cs)
 {
-   cs->provider.url = eina_stringshare_add(BATOTO_URL);
-   cs->provider.search_index = BATOTO_SERIES_INDEX;
-   cs->provider.index_start[0] = BATOTO_SERIES_INDEX_START;
-   cs->provider.index_char[0] = BATOTO_SERIES_INDEX_START_CHAR;
-   cs->provider.index_start[1] = BATOTO_SERIES_INDEX_IMAGE;
-   cs->provider.index_char[1] = BATOTO_SERIES_INDEX_IMAGE_CHAR;
-   cs->provider.index_start[2] = BATOTO_SERIES_INDEX_ALT_NAME;
-   cs->provider.index_char[2] = BATOTO_SERIES_INDEX_ALT_NAME_CHAR;
-   cs->provider.index_start[3] = BATOTO_SERIES_INDEX_AUTHOR;
-   cs->provider.index_char[3] = BATOTO_SERIES_INDEX_AUTHOR_CHAR;
-   cs->provider.index_start[4] = BATOTO_SERIES_INDEX_ARTIST;
-   cs->provider.index_char[4] = BATOTO_SERIES_INDEX_ARTIST_CHAR;
-   cs->provider.index_start[5] = BATOTO_SERIES_INDEX_AUTHOR;
-   cs->provider.index_char[5] = BATOTO_SERIES_INDEX_AUTHOR_CHAR;
-   cs->provider.index_start[6] = BATOTO_SERIES_INDEX_PRE_COMPLETED;
-   cs->provider.index_char[6] = BATOTO_SERIES_INDEX_PRE_COMPLETED_CHAR;
-   cs->provider.index_start[7] = BATOTO_SERIES_INDEX_DESC;
-   cs->provider.index_char[7] = BATOTO_SERIES_INDEX_DESC_CHAR;
-   cs->provider.data_cb = (Provider_Data_Cb)batoto_comic_series_data_cb;
-   cs->provider.init_cb = (Provider_Init_Cb)batoto_comic_page_init_cb;
+   cs->provider = &series_provider;
 }
 
 void
 batoto_search_init_cb(Search_Name *sn)
 {
-   sn->provider.url = eina_stringshare_add(BATOTO_URL);
-   sn->provider.search_url = eina_stringshare_add(BATOTO_SEARCH_URL);
-   sn->provider.search_index = BATOTO_SEARCH_INDEX;
-   sn->provider.index_start[0] = BATOTO_SEARCH_INDEX_START;
-   sn->provider.index_char[0] = BATOTO_SEARCH_INDEX_START_CHAR;
-   sn->provider.index_start[1] = BATOTO_SEARCH_INDEX_POST_HREF;
-   sn->provider.index_char[1] = BATOTO_SEARCH_INDEX_POST_HREF_CHAR;
-   sn->provider.index_start[2] = BATOTO_SEARCH_INDEX_POST_NAME;
-   sn->provider.index_char[2] = BATOTO_SEARCH_INDEX_POST_NAME_CHAR;
-   sn->provider.index_start[3] = BATOTO_SEARCH_INDEX_POST_AUTHOR;
-   sn->provider.index_char[3] = BATOTO_SEARCH_INDEX_POST_AUTHOR_CHAR;
-   sn->provider.index_start[4] = BATOTO_SEARCH_INDEX_POST_VIEWS;
-   sn->provider.index_char[4] = BATOTO_SEARCH_INDEX_POST_VIEWS_CHAR;
-   sn->provider.index_start[5] = BATOTO_SEARCH_INDEX_POST_FOLLOWS;
-   sn->provider.index_char[5] = BATOTO_SEARCH_INDEX_POST_FOLLOWS_CHAR;
-   sn->provider.index_start[6] = BATOTO_SEARCH_INDEX_END;
-   sn->provider.index_char[6] = BATOTO_SEARCH_INDEX_END_CHAR;
-   sn->provider.replace_str = strdup(BATOTO_REPLACE_STR);
-   sn->provider.data_cb = BATOTO_DATA_CB;
-   sn->provider.init_cb = BATOTO_INIT_CB;
+   sn->provider = &search_provider;
 }

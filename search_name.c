@@ -38,7 +38,6 @@ search_name_free(Search_Name *sn)
    if (!sn) return;
    ecore_con_url_free(sn->ecu);
    eina_stringshare_del(sn->name);
-   eina_stringshare_del(sn->provider.url);
    EINA_INLIST_FOREACH_SAFE(sn->results, l, sr)
      {
         search_result_free(sr);
@@ -99,7 +98,7 @@ search_name_list_pic_cb(Search_Result *sr, Evas_Object *obj, const char *part)
 void
 search_name_parser(Search_Name *sn)
 {
-   sn->provider.data_cb(sn);
+   sn->provider->data_cb(sn);
 }
 
 void
