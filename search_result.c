@@ -13,6 +13,7 @@ search_result_free(Search_Result *sr)
       eina_stringshare_del(s);
    eina_stringshare_del(sr->image.href);
    if (sr->image.buf) eina_binbuf_free(sr->image.buf);
+   search_result_item_result_del(sr);
    free(sr);
 }
 
@@ -24,6 +25,7 @@ search_result_add(Search_Name *sn)
    sr = calloc(1, sizeof(Search_Result));
    sr->search = (unsigned int*)sn;
    sr->e = sn->e;
+   sr->provider = sn->provider;
    sr->image.identifier = IDENTIFIER_SEARCH_IMAGE;
    sr->image.parent = sr;
    sn->results = eina_inlist_append(sn->results, EINA_INLIST_GET(sr));

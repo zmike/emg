@@ -1,14 +1,14 @@
 #include "emg.h"
 
 static Evas_Object *
-_search_name_tooltip_cb(Search_Result *sr, Evas_Object *obj __UNUSED__, Evas_Object *tt, void *it __UNUSED__)
+_search_name_tooltip_cb(Search_Result_Item *sri, Evas_Object *obj __UNUSED__, Evas_Object *tt, void *it __UNUSED__)
 {
    Evas_Object *ic;
 
-   if (!sr->image.buf) return NULL;
+   if (!sri->image->buf) return NULL;
    ic = elm_icon_add(tt);
    evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
-   elm_icon_memfile_set(ic, eina_binbuf_string_get(sr->image.buf), eina_binbuf_length_get(sr->image.buf), NULL, NULL);
+   elm_icon_memfile_set(ic, eina_binbuf_string_get(sri->image->buf), eina_binbuf_length_get(sri->image->buf), NULL, NULL);
    elm_icon_scale_set(ic, 0, 0);
    elm_icon_aspect_fixed_set(ic, EINA_TRUE);
    elm_icon_fill_outside_set(ic, EINA_FALSE);
@@ -38,61 +38,13 @@ search_name_free(Search_Name *sn)
    if (!sn) return;
    ecore_con_url_free(sn->ecu);
    eina_stringshare_del(sn->name);
+   if (!sn->results) return;
    EINA_INLIST_FOREACH_SAFE(sn->results, l, sr)
      {
         search_result_free(sr);
         /* safety */
         if (++x == sn->result_count) break;
      }
-}
-
-char *
-search_name_list_text_cb(Search_Result *sr, Evas_Object *obj __UNUSED__, const char *part)
-{
-   if (!strcmp(part, "elm.text"))
-     {
-        char *buf;
-        size_t size;
-
-        size = sizeof(char) * (sr->namelen + sizeof(" ( chapters)") + 16);
-        buf = malloc(size);
-
-        snprintf(buf, size, "%s (%u chapters)", sr->name, sr->total);
-        return buf;
-     }
-   if (!strcmp(part, "elm.text.sub"))
-     {
-        size_t size;
-        Eina_List *l;
-        const char *tag;
-        char *buf;
-
-        if (!sr->tags) return NULL;
-        size = sizeof(char) * (1 + ((eina_list_count(sr->tags) - 1) * 2) + sr->tags_len);
-        buf = malloc(size);
-        buf[0] = 0;
-        EINA_LIST_FOREACH(sr->tags, l, tag)
-          {
-             strcat(buf, tag);
-             if (l->next) strcat(buf, ", ");
-          }
-        return buf;
-     }
-   return NULL;
-}
-
-Evas_Object *
-search_name_list_pic_cb(Search_Result *sr, Evas_Object *obj, const char *part)
-{
-   Evas_Object *ic;
-
-   if (strcmp(part, "elm.swallow.end")) return NULL;
-   if (!sr->image.buf) return NULL;
-   ic = elm_icon_add(obj);
-   evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
-   elm_icon_memfile_set(ic, eina_binbuf_string_get(sr->image.buf), eina_binbuf_length_get(sr->image.buf), NULL, NULL);
-   evas_object_show(ic);
-   return ic;
 }
 
 void

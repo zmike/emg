@@ -10,8 +10,8 @@ static void mangareader_series_init_cb(Comic_Series *cs);
 static Comic_Provider search_provider =
 {
    .url = MANGAREADER_URL,
-   .priority = MANGAREADER_PROVIDER_PRIORITY,
    .search_url = MANGAREADER_SEARCH_URL,
+   .priority = MANGAREADER_PROVIDER_PRIORITY,
    .search_index = MANGAREADER_SEARCH_INDEX,
    .search_name_count = MANGAREADER_SEARCH_INDEX_NAME_COUNT,
    .index_start[0] = MANGAREADER_SEARCH_INDEX_START,
@@ -143,7 +143,6 @@ mangareader_search_name_cb(Search_Name *sn)
              sr->name = eina_stringshare_add_length((char*)index_start, p - index_start);
              sr->namelen = p - index_start;
              INF("name=%s", sr->name);
-             sr->it = elm_genlist_item_append(sn->e->sw.list, &sn->e->sw.itc, sr, NULL, 0, (Evas_Smart_Cb)NULL, sr);
              break;
            case 3: /* total chapters */
              sr = EINA_INLIST_CONTAINER_GET(sn->results->last, Search_Result);
@@ -156,7 +155,7 @@ mangareader_search_name_cb(Search_Name *sn)
              {
                 char *tag;
                 sr = EINA_INLIST_CONTAINER_GET(sn->results->last, Search_Result);
-                if (!isalnum(index_start[0]))
+                while (!isalnum(index_start[0]))
                   index_start++;
                 while ((tag = memchr(index_start, ',', p - index_start)))
                   {
@@ -167,7 +166,7 @@ mangareader_search_name_cb(Search_Name *sn)
                   }
                 if (index_start[0] == ' ') index_start++;
                 search_result_tag_add(sr, index_start, p);
-                if (sr->it) elm_genlist_item_update(sr->it);
+                search_result_item_result_add(sr);
                 break;
              }
            default:
@@ -194,7 +193,7 @@ mangareader_comic_series_data_cb2(Comic_Series *cs)
    buf = p + 46 + cs->namelen;
    p = strchr(buf, '<');
    if (!p) abort(); /* FIXME */
-   cs->desc = strndup(buf, p - buf);
+   cs->desc = util_markup_to_utf8(buf, p);
    series_view_desc_set(cs->e, cs);
    INF("desc=%s", cs->desc);
    if ((int)size < (p + 195) - base) abort(); /* FIXME */

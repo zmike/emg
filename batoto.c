@@ -10,8 +10,8 @@ static void batoto_series_init_cb(Comic_Series *cs);
 static Comic_Provider search_provider =
 {
    .url = BATOTO_URL,
-   .priority = BATOTO_PROVIDER_PRIORITY,
    .search_url = BATOTO_SEARCH_URL,
+   .priority = BATOTO_PROVIDER_PRIORITY,
    .search_index = BATOTO_SEARCH_INDEX,
    .index_start[0] = BATOTO_SEARCH_INDEX_START,
    .index_char[0] = BATOTO_SEARCH_INDEX_START_CHAR,
@@ -115,7 +115,7 @@ batoto_search_name_cb(Search_Name *sn)
              sr->name = util_markup_to_utf8(index_start, p);
              sr->namelen = p - index_start;
              INF("name=%s", sr->name);
-             sr->it = elm_genlist_item_append(sn->e->sw.list, &sn->e->sw.itc, sr, NULL, 0, (Evas_Smart_Cb)NULL, sr);
+             search_result_item_result_add(sr);
              break;
            case 6:
              sn->idx[1] = -1;
@@ -202,8 +202,10 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
                        if (data) decimal = EINA_TRUE;
                     }
                }
+             else
+               decimal = EINA_TRUE;
           }
-        if (cs->total == 1)
+        if (!cs->total)
           {
              if ((abs((int)number - chapters) < 10) || (number > 12))
                {
@@ -222,31 +224,40 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
                   cc = ccp;
                }
           }
+        if (cs->total > 45)
+          INF("X");
         if ((!decimal) && (!update)) cs->total++;
         if (!update)
           {
              cc = comic_chapter_new(cs, EINA_TRUE);
-             if (use_ch)
-               cc->number = number;
+             cc->decimal = decimal;
           }
         if (!cc->href)
-          cc->href = eina_stringshare_add_length(href, hrefend - href);
+          {
+             eina_stringshare_del(cc->href);
+             cc->href = eina_stringshare_add_length(href, hrefend - href);
+          }
         if (!update)
           {
              cp = comic_page_new(cc, 1);
              cp->href = eina_stringshare_ref(cc->href);
           }
-        else if (!use_ch)
+        if (!use_ch)
           {
              Comic_Chapter *ccn;
 
              ccn = comic_chapter_next_get(cc);
-             cc->number = ccn->decimal ? ((int)ccn->number) : (int)ccn->number - 1;
-             if (cc->decimal) cc->number += 0.5;
+             if (ccn)
+               cc->number = ccn->decimal ? ((int)ccn->number) : (int)ccn->number - 1;
+             else
+               cc->number = number;
           }
         data = p;
-        BUFCHR(' ');
-        BUFCHECK(1);
+        if (isdigit(data[0]))
+          {
+             BUFCHR(' ');
+             BUFCHECK(1);
+          }
         BUFCHR('<');
         if ((p - data > 1) && ((p - data != 11) || memcmp(data, "Read Online", 11)))
           {
@@ -254,7 +265,6 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
                {
                   data += 3;
                   cc->number--;
-                  cs->total--;
                   cc->decimal = EINA_TRUE;
                }
              if (!cc->name)
@@ -375,7 +385,7 @@ batoto_comic_series_data_cb(Comic_Series *cs)
              if ((p - index_start != 7) && (p - index_start != 9)) abort();
              break;
            case 7:
-             cs->desc = strndup(index_start, p - index_start);
+             cs->desc = util_markup_to_utf8(index_start, p);
              series_view_desc_set(cs->e, cs);
              INF("desc=%s", cs->desc);
              cs->idx[1]++;

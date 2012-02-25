@@ -52,4 +52,4 @@
 #define BATOTO_SEARCH_URL "http://www.batoto.net/search?name=%s&name_cond=c"
 #define BATOTO_URL "http://www.batoto.net"
 
-#define MANGAREADER_PROVIDER_PRIORITY 9
+#define BATOTO_PROVIDER_PRIORITY 9

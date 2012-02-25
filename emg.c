@@ -126,7 +126,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            ci->ecu = NULL;
            INF("IMGURL DONE: %s", ci->href);
            sr = ci->parent;
-           if (sr->it) elm_genlist_item_update(sr->it);
+           search_result_item_update(sr);
            break;
         }
       case IDENTIFIER_COMIC_IMAGE:
@@ -486,8 +486,8 @@ main(int argc, char *argv[])
    evas_object_show(list);
 
    e.sw.itc.item_style     = "double_label";
-   e.sw.itc.func.text_get = (Elm_Genlist_Item_Text_Get_Cb)search_name_list_text_cb;
-   e.sw.itc.func.content_get  = (Elm_Genlist_Item_Content_Get_Cb)search_name_list_pic_cb;
+   e.sw.itc.func.text_get = (Elm_Genlist_Item_Text_Get_Cb)search_list_text_cb;
+   e.sw.itc.func.content_get  = (Elm_Genlist_Item_Content_Get_Cb)search_list_pic_cb;
    e.sw.itc.func.state_get = NULL;
    e.sw.itc.func.del       = NULL;
    e.sw.list = list = elm_genlist_add(e.win);
@@ -519,7 +519,7 @@ main(int argc, char *argv[])
    evas_object_resize(win, 640, 712);
    elm_win_center(win, EINA_TRUE, EINA_TRUE);
 
-   //e.providers = eina_list_append(e.providers, mangareader_search_init_cb);
+   e.providers = eina_list_append(e.providers, mangareader_search_init_cb);
    e.providers = eina_list_append(e.providers, batoto_search_init_cb);
    search_view_show(&e, NULL, NULL);
 

@@ -44,8 +44,10 @@ typedef struct Search_Result Search_Result;
 typedef struct Comic_Chapter Comic_Chapter;
 typedef struct Comic_Page Comic_Page;
 typedef struct Comic_Provider Comic_Provider;
+typedef struct Search_Result_Item Search_Result_Item;
 typedef void (*Provider_Data_Cb)(void *);
 typedef void (*Provider_Init_Cb)(void *);
+
 
 typedef enum EMG_View
 {
@@ -65,6 +67,7 @@ typedef struct Search_Window
    Elm_Object_Item *nf_it;
 
    Eina_List *searches;
+   Eina_List *results;
    unsigned int running;
    Elm_Genlist_Item_Class itc;
 } Search_Window;
@@ -160,15 +163,31 @@ struct Search_Result
    unsigned int identifier;
    EINA_INLIST;
    EMG *e;
+   Search_Result_Item *sri;
    unsigned int *search; /* deref to determine parent type */
-   Elm_Object_Item *it; /* list item */
    const char *name;
    unsigned int namelen;
    const char *href;
    unsigned int total;
    Eina_List *tags;
    unsigned int tags_len;
+   Comic_Provider *provider;
    Comic_Image image;
+};
+
+struct Search_Result_Item
+{
+   Elm_Object_Item *it; /* list item */
+   Search_Result *sr; /* currently used result */
+   const char *name;
+   unsigned int namelen;
+   const char *href;
+   unsigned int total;
+   Eina_List *tags;
+   unsigned int tags_len;
+   Comic_Image *image;
+   Eina_List *results;
+   unsigned int result_count;
 };
 
 struct Comic_Page
@@ -213,7 +232,7 @@ struct Comic_Series
    EMG *e;
    Eina_Strbuf *buf;
    unsigned int total;
-   char *desc;
+   const char *desc;
    const char *name;
    const char *alt_name;
    unsigned int year;
@@ -233,8 +252,8 @@ struct Comic_Series
 
 void search_name_free(Search_Name *sn);
 void search_name_parser(Search_Name *sn);
-char *search_name_list_text_cb(Search_Result *sr, Evas_Object *obj, const char *part);
-Evas_Object *search_name_list_pic_cb(Search_Result *sr, Evas_Object *obj, const char *part);
+char *search_list_text_cb(Search_Result_Item *sri, Evas_Object *obj, const char *part);
+Evas_Object *search_list_pic_cb(Search_Result_Item *sri, Evas_Object *obj, const char *part);
 void search_name_list_init(EMG *e, Evas_Object *list);
 
 void search_view_clear(EMG *e);
@@ -242,6 +261,10 @@ void search_name_create(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __
 void search_view_count_update(Search_Name *sn);
 void search_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
 void search_result_pick(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *it);
+
+void search_result_item_result_add(Search_Result *sr);
+void search_result_item_result_del(Search_Result *sr);
+void search_result_item_update(Search_Result *sr);
 
 void search_result_free(Search_Result *sr);
 Search_Result *search_result_add(Search_Name *sn);

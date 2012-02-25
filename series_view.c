@@ -125,12 +125,8 @@ series_view_year_set(EMG *e, Comic_Series *cs)
 void
 series_view_desc_set(EMG *e, Comic_Series *cs)
 {
-   char *buf;
    if (e->sv.cs != cs) return;
-
-   buf = evas_textblock_text_markup_to_utf8(NULL, cs->desc);
-   elm_object_text_set(e->sv.desc_lbl, buf);
-   free(buf);
+   elm_object_text_set(e->sv.desc_lbl, cs->desc);
 }
 
 void
