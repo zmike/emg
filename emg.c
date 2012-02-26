@@ -64,12 +64,6 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            sn = ecore_con_url_data_get(ev->url_con);
            if (!sn->buf) sn->buf = eina_strbuf_new();
            eina_strbuf_append_length(sn->buf, (char*)ev->data, ev->size);
-           search_name_parser(sn);
-           if (sn->done)
-             {
-                ecore_con_url_free(ev->url_con);
-                sn->ecu = NULL;
-             }
         }
         break;
       case IDENTIFIER_SEARCH_IMAGE:
@@ -104,7 +98,6 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            cp = ecore_con_url_data_get(ev->url_con);
            if (!cp->buf) cp->buf = eina_strbuf_new();
            eina_strbuf_append_length(cp->buf, (char*)ev->data, ev->size);
-           comic_page_parser(cp);
            break;
         }
         
@@ -202,8 +195,8 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            sn->ecu = NULL;
            elm_object_text_set(sn->e->sw.progress, "Complete");
            elm_progressbar_value_set(sn->e->sw.progress, 100);
-           sn->done = EINA_TRUE;
            search_name_parser(sn);
+           sn->done = EINA_TRUE;
            if (!(--sn->e->sw.running))
              elm_object_disabled_set(sn->e->sw.entry, EINA_FALSE);
            break;
@@ -236,6 +229,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 
            cp = ecore_con_url_data_get(ev->url_con);
            cp->ecu = NULL;
+           comic_page_parser(cp);
            if (cp->buf) eina_strbuf_free(cp->buf);
            cp->buf = NULL;
            comic_view_readahead_ensure(&e);
@@ -284,8 +278,7 @@ window_key(void *data __UNUSED__, Evas *evas __UNUSED__, Evas_Object *obj __UNUS
 static void
 _win_del(void *data __UNUSED__, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__)
 {
-   evas_object_unref(e.cv.prev);
-   evas_object_unref(e.cv.next);
+   ecore_main_loop_quit();
 }
 
 int

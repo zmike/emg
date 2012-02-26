@@ -56,7 +56,7 @@ comic_chapter_item_chapter_add(Comic_Chapter *cc, Comic_Chapter_Item *cci)
 {
    Eina_Bool forward = EINA_TRUE;
 
-   DBG("(cc=%g, cci=%g)", cc->number, cci ? cci->cc->number : 0);
+   //DBG("(cc=%g, cci=%g)", cc->number, cci ? cci->cc->number : 0);
    if (!cc->csd->cs->chapters)
      return _comic_chapter_item_new(cc);
 
@@ -74,7 +74,7 @@ comic_chapter_item_chapter_add(Comic_Chapter *cc, Comic_Chapter_Item *cci)
      forward = EINA_FALSE;
    if (forward)
      {
-        DBG("ITER: FORWARD");
+        //DBG("ITER: FORWARD");
         for (; cci; cci = comic_chapter_item_next_get(cci))
           {
              if (cci->cc->number < cc->number) continue;
