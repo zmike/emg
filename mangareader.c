@@ -201,7 +201,7 @@ mangareader_comic_series_data_cb2(Comic_Series_Data *csd)
      {
         char *pp;
         const char *href;
-        Eina_Bool decimal;
+        Eina_Bool decimal = EINA_FALSE;
         double number;
         
         if (buf[0] != '/') break;
