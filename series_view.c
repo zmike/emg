@@ -8,7 +8,7 @@ _series_view_pick_cb(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *it)
 {
    Comic_Chapter_Item *cci = elm_object_item_data_get(it);
 
-   comic_view_chapter_set(e, cci);  
+   comic_view_chapter_set(e, cci);
    comic_view_show(e, NULL, NULL);
 }
 
@@ -91,7 +91,7 @@ series_view_clear(EMG *e)
    elm_object_text_set(e->sv.art_lbl, "");
    elm_object_text_set(e->sv.chap_lbl, "");
    elm_object_text_set(e->sv.year_lbl, "");
-   
+
 }
 
 void

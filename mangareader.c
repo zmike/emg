@@ -203,7 +203,7 @@ mangareader_comic_series_data_cb2(Comic_Series_Data *csd)
         const char *href;
         Eina_Bool decimal = EINA_FALSE;
         double number;
-        
+
         if (buf[0] != '/') break;
         p = strchr(buf, '"');
         if (!p) abort(); /* FIXME */

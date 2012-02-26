@@ -100,11 +100,11 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            eina_strbuf_append_length(cp->buf, (char*)ev->data, ev->size);
            break;
         }
-        
+
       default:
         break;
      }
-   
+
    return ECORE_CALLBACK_RENEW;
 }
 
@@ -159,7 +159,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
                 ci->buf = NULL;
                 comic_series_image_fetch(csd);
              }
-           
+
 
            break;
         }
