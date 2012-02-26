@@ -1,17 +1,27 @@
 #include "emg.h"
 
+void
+comic_chapter_free(Comic_Chapter *cc)
+{
+   if (!cc) return;
+   eina_stringshare_del(cc->name);
+   eina_stringshare_del(cc->href);
+   free(cc);
+}
+
 Comic_Chapter *
-comic_chapter_new(Comic_Series *cs, Eina_Bool before)
+comic_chapter_new(Comic_Series_Data *csd, double number, Eina_Bool prepend)
 {
    Comic_Chapter *cc;
 
    cc = calloc(1, sizeof(Comic_Chapter));
-   cc->cs = cs;
-   cc->identifier = IDENTIFIER_COMIC_CHAPTER;
-   if (before)
-     cs->chapters = eina_inlist_prepend(cs->chapters, EINA_INLIST_GET(cc));
+   cc->csd = csd;
+   cc->provider = csd->provider;
+   cc->number = number;
+   if (prepend)
+     csd->chapters = eina_inlist_prepend(csd->chapters, EINA_INLIST_GET(cc));
    else
-     cs->chapters = eina_inlist_append(cs->chapters, EINA_INLIST_GET(cc));
+     csd->chapters = eina_inlist_append(csd->chapters, EINA_INLIST_GET(cc));
    return cc;
 }
 
@@ -37,7 +47,6 @@ comic_chapter_images_clear(Comic_Chapter *cc)
         DBG("DEL IMG: %u", cp->number);
      }
 }
-
 
 Comic_Chapter *
 comic_chapter_prev_get(Comic_Chapter *cc)

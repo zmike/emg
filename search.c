@@ -68,7 +68,7 @@ search_result_pick(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *it)
         series_view_populate(cs);
         return;
      }
-   cs = comic_series_new(sri->sr);
+   cs = comic_series_new(sri);
    series_view_title_set(e, cs);
    cs->e->sv.cs = cs;
    series_view_show(e, NULL, NULL);
@@ -102,7 +102,7 @@ search_name_create(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSE
         sn->name = eina_stringshare_add(buf);
         sn->namelen = buflen;
         e->sw.running++;
-        cb(sn);
+        sn->provider = cb();
         sn->e = e;
 
         if (sn->provider->replace_str && sn->provider->replace_str[1])
@@ -195,6 +195,7 @@ search_list_pic_cb(Search_Result_Item *sri, Evas_Object *obj, const char *part)
 
    if (strcmp(part, "elm.swallow.end")) return NULL;
    if (!sri->image->buf) return NULL;
+   DBG("%s", sri->name);
    ic = elm_icon_add(obj);
    evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
    elm_icon_memfile_set(ic, eina_binbuf_string_get(sri->image->buf), eina_binbuf_length_get(sri->image->buf), NULL, NULL);

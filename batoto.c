@@ -1,11 +1,11 @@
 #include "batoto.h"
 
 static void batoto_search_name_cb(Search_Name *sn);
-static void batoto_comic_series_data_cb2(Comic_Series *cs);
-static void batoto_comic_series_data_cb(Comic_Series *cs);
+static void batoto_comic_series_data_cb2(Comic_Series_Data *csd);
+static void batoto_comic_series_data_cb(Comic_Series_Data *csd);
 static void batoto_comic_page_data_cb(Comic_Page *cp);
-static void batoto_comic_page_init_cb(Comic_Page *cp);
-static void batoto_series_init_cb(Comic_Series *cs);
+static Comic_Provider *batoto_comic_page_init_cb(void);
+static Comic_Provider *batoto_series_init_cb(void);
 
 static Comic_Provider search_provider =
 {
@@ -137,17 +137,18 @@ batoto_search_name_cb(Search_Name *sn)
 
 
 static void
-batoto_comic_series_data_cb2(Comic_Series *cs)
+batoto_comic_series_data_cb2(Comic_Series_Data *csd)
 {
    const char *base, *data, *p;
    size_t size;
    int chapters = 0;
    Eina_Bool use_ch = EINA_FALSE;
    Comic_Chapter *cc = NULL;
+   Comic_Chapter *ccp = NULL;
 
-   base = data = eina_strbuf_string_get(cs->buf);
-   size = eina_strbuf_length_get(cs->buf);
-   data += cs->idx[0];
+   base = data = eina_strbuf_string_get(csd->buf);
+   size = eina_strbuf_length_get(csd->buf);
+   data += csd->idx[0];
    p = strstr(data, "<tr");
    if (!p) abort();
    BUFCHECK(11);
@@ -155,7 +156,6 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
    while (1)
      {
         Comic_Page *cp;
-        Comic_Chapter *ccp;
         const char *href, *hrefend;
         Eina_Bool update = EINA_FALSE, decimal = EINA_FALSE;
         double number = 0;
@@ -172,7 +172,7 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
         if (memcmp(data, "English", 7))
           {
              p = data;
-             BUFCHECK(BATOTO_SERIES_INDEX_ROW_SIZE - 20);
+             BUFCHECK(BATOTO_SERIES_INDEX_ROW_SIZE - 30);
              continue;
           }
         BUFCHECK(85);
@@ -207,7 +207,7 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
              else
                decimal = EINA_TRUE;
           }
-        if (!cs->total)
+        if (!cc)
           {
              if ((abs((int)number - chapters) < 10) || (number > 12))
                {
@@ -217,19 +217,18 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
              else
                number = chapters; /* adjust later */
           }
-        if (use_ch && cs->chapters)
+        if (use_ch && csd->cs->chapters)
           {
-             ccp = EINA_INLIST_CONTAINER_GET(cs->chapters, Comic_Chapter);
-             if (ccp->number == number)
+             if (ccp && ccp->number == number)
                {
                   update = EINA_TRUE;
                   cc = ccp;
                }
           }
-        if ((!decimal) && (!update)) cs->total++;
+        if ((!decimal) && (!update)) csd->chapter_count++;
         if (!update)
           {
-             cc = comic_chapter_new(cs, EINA_TRUE);
+             cc = comic_chapter_new(csd, number, EINA_TRUE);
              cc->decimal = decimal;
           }
         if (!cc->href)
@@ -245,7 +244,6 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
              if (ccn)
                cc->number = ccn->decimal ? ((int)ccn->number) : (int)ccn->number - 1;
           }
-        if (!cc->number) cc->number = number;
         if (!update)
           {
              cp = comic_page_new(cc, 1);
@@ -280,49 +278,60 @@ batoto_comic_series_data_cb2(Comic_Series *cs)
              if (!cc->name)
                cc->name = util_markup_to_utf8(data, p);
           }
-        INF("chapter: %g - %s: %s", cc->number, cc->name, cc->href);
+        ccp = cc;
+        //INF("chapter: %g - %s: %s", cc->number, cc->name, cc->href);
      }
    if (!use_ch)
      {
         int adjust2 = 0;
-        chapters =  chapters - cs->total;
+        chapters =  chapters - csd->chapter_count;
         INF("ADJUST: %d", chapters);
         for (; cc; cc = comic_chapter_next_get(cc))
           {
              char buf[32];
              cc->number -= (chapters + adjust2);
+             //INF("chapter: %g - %s: %s", cc->number, cc->name, cc->href);
              if (!cc->decimal) continue;
              snprintf(buf, sizeof(buf), "%g", cc->number);
              if (!strchr(buf, '.')) cc->number += 0.5;
              adjust2++;
           }
      }
+   {
+      Comic_Chapter_Item *cci = NULL;
+      Eina_Inlist *l;
+
+      if (csd->cs->chapters)
+        cci = EINA_INLIST_CONTAINER_GET(csd->cs->chapters->last, Comic_Chapter_Item);
+      EINA_INLIST_FOREACH_SAFE(csd->chapters, l, cc)
+        cci = comic_chapter_item_chapter_add(cc, cci);
+   }
 }
 
 static void
-batoto_comic_series_data_cb(Comic_Series *cs)
+batoto_comic_series_data_cb(Comic_Series_Data *csd)
 {
    const char *data;
    size_t size;
 
-   if (cs->done && (cs->idx[1] == 8))
+   if (csd->done && (csd->idx[1] == 8))
      {
-        batoto_comic_series_data_cb2(cs);
+        batoto_comic_series_data_cb2(csd);
         return;
      }
 
-   data = eina_strbuf_string_get(cs->buf);
-   size = eina_strbuf_length_get(cs->buf);
-   if ((!cs->idx[0]) && (!cs->idx[1]))
-     cs->idx[0] = cs->provider->search_index;
-   //DBG("(idx=%u,size=%d)", cs->idx[0], size);
+   data = eina_strbuf_string_get(csd->buf);
+   size = eina_strbuf_length_get(csd->buf);
+   if ((!csd->idx[0]) && (!csd->idx[1]))
+     csd->idx[0] = csd->provider->search_index;
+   //DBG("(idx=%u,size=%d)", csd->idx[0], size);
    /* discard unneeded bytes, hooray */
-   for (; (cs->idx[1] < sizeof(cs->provider->index_start)) && (cs->provider->index_start[cs->idx[1]] || cs->provider->index_char[cs->idx[1]]); cs->idx[1]++)
+   for (; (csd->idx[1] < sizeof(csd->provider->index_start)) && (csd->provider->index_start[csd->idx[1]] || csd->provider->index_char[csd->idx[1]]); csd->idx[1]++)
      {
         const char *p, *index_start;
 
-        //DBG("(idx=%u,size=%d)", cs->idx[0], size);
-        if (cs->idx[0] + cs->provider->index_start[cs->idx[1]] > (unsigned int)size)
+        //DBG("(idx=%u,size=%d)", csd->idx[0], size);
+        if (csd->idx[0] + csd->provider->index_start[csd->idx[1]] > size)
           {
              /*
              char *buf;
@@ -331,37 +340,32 @@ batoto_comic_series_data_cb(Comic_Series *cs)
              */
              return;
           }
-        index_start = data + cs->idx[0] + cs->provider->index_start[cs->idx[1]];
-        if (cs->provider->index_char[cs->idx[1]])
+        index_start = data + csd->idx[0] + csd->provider->index_start[csd->idx[1]];
+        if (csd->provider->index_char[csd->idx[1]])
           {
-             p = memchr(index_start, cs->provider->index_char[cs->idx[1]], size - cs->idx[0]);
+             p = memchr(index_start, csd->provider->index_char[csd->idx[1]], size - csd->idx[0]);
              if (!p) return;
           }
-        switch (cs->idx[1])
+        switch (csd->idx[1])
           {
            case 0: /* series image */
              p = strstr(index_start, BATOTO_SERIES_INDEX_START_STR);
              if (!p)
                {
-                  cs->idx[0] = size;
+                  csd->idx[0] = size;
                   return;
                }
              break;
            case 1:
-             cs->image.href = eina_stringshare_add_length((char*)index_start, p - index_start);
-             INF("href=%s", cs->image.href);
-             {
-                cs->image.ecu = ecore_con_url_new(cs->image.href);
-                ecore_con_url_data_set(cs->image.ecu, &cs->image);
-                ecore_con_url_get(cs->image.ecu);
-             }
+             csd->image.href = eina_stringshare_add_length((char*)index_start, p - index_start);
+             INF("href=%s", csd->image.href);
+             comic_series_image_fetch(csd);
              break;
            case 2: /* alt name */
-             if ((!cs->alt_name) && (p - index_start > 0))
+             if (p - index_start > 0)
                {
-                  cs->alt_name = eina_stringshare_add_length((char*)index_start, p - index_start);
-                  INF("alt_name=%s", cs->alt_name);
-                  series_view_title_set(cs->e, cs);
+                  comic_series_alt_name_set(csd, index_start, p);
+                  series_view_title_set(csd->cs->e, csd->cs);
                }
              if ((unsigned int)(p - data) + 200 > size) return;
              p = strchr(p, '\r');
@@ -369,19 +373,17 @@ batoto_comic_series_data_cb(Comic_Series *cs)
            case 3: /* author */
              if (p - index_start > 0)
                {
-                  cs->author = eina_stringshare_add_length((char*)index_start, p - index_start);
-                  INF("author=%s", cs->author);
-                  series_view_author_set(cs->e, cs);
-                  p += strlen(cs->author);
+                  comic_series_author_set(csd, index_start, p);
+                  series_view_author_set(csd->cs->e, csd->cs);
+                  p += (p - index_start);
                }
              break;
            case 4: /* artist */
              if (p - index_start > 0)
                {
-                  cs->artist = eina_stringshare_add_length((char*)index_start, p - index_start);
-                  INF("artist=%s", cs->artist);
-                  series_view_artist_set(cs->e, cs);
-                  p += strlen(cs->artist);
+                  comic_series_artist_set(csd, index_start, p);
+                  series_view_artist_set(csd->cs->e, csd->cs);
+                  p += (p - index_start);
                }
              break;
            case 5:
@@ -391,21 +393,20 @@ batoto_comic_series_data_cb(Comic_Series *cs)
              index_start = p + 1;
              p = strchr(index_start, '<');
              if (!p) return;
-             cs->completed = (p - index_start != 7);
+             csd->cs->completed = (p - index_start != 7);
              if ((p - index_start != 7) && (p - index_start != 9)) abort();
              break;
            case 7:
-             cs->desc = util_markup_to_utf8(index_start, p);
-             series_view_desc_set(cs->e, cs);
-             INF("desc=%s", cs->desc);
-             cs->idx[1]++;
-             cs->idx[0] = BATOTO_SERIES_INDEX_JUMP;
-             if (!cs->done) return;
-             batoto_comic_series_data_cb2(cs);
+             comic_series_desc_set(csd, index_start, p);
+             series_view_desc_set(csd->cs->e, csd->cs);
+             csd->idx[1]++;
+             csd->idx[0] = BATOTO_SERIES_INDEX_JUMP;
+             if (!csd->done) return;
+             batoto_comic_series_data_cb2(csd);
            default:
              return;
           }
-        cs->idx[0] = p - data;
+        csd->idx[0] = p - data;
      }
 }
 
@@ -420,7 +421,7 @@ batoto_comic_page_data_cb(Comic_Page *cp)
    data = eina_strbuf_string_get(cp->buf);
    size = eina_strbuf_length_get(cp->buf);
    if ((!cp->idx[0]) && (!cp->idx[1]))
-     cp->idx[0] = cp->provider->search_index + (cp->cc->cs->total * BATOTO_PAGE_INDEX_CHAPTER_JUMP);
+     cp->idx[0] = cp->provider->search_index + (cp->cc->csd->cs->total * BATOTO_PAGE_INDEX_CHAPTER_JUMP);
    if (cp->idx[0] >= size) return;
 
    index_start = data + cp->idx[0];
@@ -580,20 +581,20 @@ batoto_comic_page_data_cb(Comic_Page *cp)
      }
 }
 
-static void
-batoto_comic_page_init_cb(Comic_Page *cp)
+static Comic_Provider *
+batoto_comic_page_init_cb(void)
 {
-   cp->provider = &page_provider;
+   return &page_provider;
 }
 
-static void
-batoto_series_init_cb(Comic_Series *cs)
+static Comic_Provider *
+batoto_series_init_cb(void)
 {
-   cs->provider = &series_provider;
+   return &series_provider;
 }
 
-void
-batoto_search_init_cb(Search_Name *sn)
+Comic_Provider *
+batoto_search_init_cb(void)
 {
-   sn->provider = &search_provider;
+   return &search_provider;
 }

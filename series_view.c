@@ -1,56 +1,80 @@
 #include "emg.h"
+#include <time.h>
 
 #define SERIES_VIEW_POPULATE_COUNT 10
 
 static void
 _series_view_pick_cb(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *it)
 {
-   Comic_Chapter *cc = elm_object_item_data_get(it);
+   Comic_Chapter_Item *cci = elm_object_item_data_get(it);
 
-   comic_view_chapter_set(e, cc);  
+   comic_view_chapter_set(e, cci);  
    comic_view_show(e, NULL, NULL);
 }
+
+static int
+_series_view_compare_cb(Comic_Chapter_Item *a, Comic_Chapter_Item *b)
+{
+   return a->cc->number - b->cc->number;
+}
+
 
 void
 series_view_populate(Comic_Series *cs)
 {
-   Comic_Chapter *cc = NULL;
+   Comic_Chapter_Item *cci = NULL;
    Eina_Inlist *l;
    unsigned int count = 0;
 
    //DBG("cs=%s", cs->name);
+   if (!cs->chapters) return;
    l = cs->populate_job ?: cs->chapters;
-   cc = EINA_INLIST_CONTAINER_GET(l, Comic_Chapter);
-   for (; cc; cc = comic_chapter_next_get(cc))
+   cci = EINA_INLIST_CONTAINER_GET(l, Comic_Chapter_Item);
+   for (; cci; cci = comic_chapter_item_next_get(cci))
      {
-        elm_genlist_item_append(cs->e->sv.list, &cs->e->sv.itc, cc, NULL, 0, (Evas_Smart_Cb)NULL, NULL);
+        if (cci->it)
+          elm_genlist_item_update(cci->it);
+        else
+          {
+             cci->it = elm_genlist_item_sorted_insert(cs->e->sv.list, &cs->e->sv.itc, cci, NULL, 0, (Eina_Compare_Cb)_series_view_compare_cb, NULL, NULL);
+             //DBG("adding item for cc %g", cci->cc->number);
+          }
         if (++count == SERIES_VIEW_POPULATE_COUNT) break;
      }
-   if (cc)
+   if (cci)
      {
-        cs->populate_job = EINA_INLIST_GET(cc)->next;
+        cs->populate_job = EINA_INLIST_GET(cci)->next;
         if (cs->populate_job) ecore_job_add((Ecore_Cb)series_view_populate, cs);
      }
 }
 
 char *
-series_view_list_text_cb(Comic_Chapter *cc, Evas_Object *obj __UNUSED__, const char *part)
+series_view_list_text_cb(Comic_Chapter_Item *cci, Evas_Object *obj __UNUSED__, const char *part)
 {
    char *buf;
    size_t size;
+   struct tm *t;
+   char date[128];
+   Eina_Bool use_date = EINA_FALSE;
 
+   if (!cci) return NULL;
    if (strcmp(part, "elm.text")) return NULL;
-   if (!cc) return NULL;
 
-   size = sizeof(char) * (sizeof("Chapter XXXX.XX: (DD/MM/YYYY)") + (cc->name ? strlen(cc->name) : 0));
+   size = sizeof(char) * (sizeof("Chapter XXXX.XX: (DD/MM/YYYY)") + (cci->name ? strlen(cci->name) : 0));
    buf = malloc(size);
 
-   if (cc->decimal)
-     snprintf(buf, size, "Chapter %g%s%s%s%s%s%s", cc->number, cc->date || cc->name ? ":" : "",
-              cc->name ? " " : "", cc->name ?: "", cc->date ? " (" : "", cc->date ?: "", cc->date ? ")" : "");
+   if (cci->date)
+     {
+        t = localtime(&cci->date);
+        use_date = !!strftime(date, sizeof(date), "%D", t);
+     }
+
+   if (cci->cc->decimal)
+     snprintf(buf, size, "Chapter %g%s%s%s%s%s%s", cci->cc->number, use_date || cci->name ? ":" : "",
+              cci->name ? " " : "", cci->name ?: "", use_date ? " (" : "", use_date ? date : "", use_date ? ")" : "");
    else
-     snprintf(buf, size, "Chapter %d%s%s%s%s%s%s", (int)cc->number, cc->date || cc->name ? ":" : "",
-              cc->name ? " " : "", cc->name ?: "", cc->date ? " (" : "", cc->date ?: "", cc->date ? ")" : "");
+     snprintf(buf, size, "Chapter %d%s%s%s%s%s%s", (int)cci->cc->number, use_date || cci->name ? ":" : "",
+              cci->name ? " " : "", cci->name ?: "", use_date ? " (" : "", use_date ? date : "", use_date ? ")" : "");
    //INF("CHAPTER NAME SET: %s", buf);
    return buf;
 }

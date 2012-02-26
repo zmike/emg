@@ -1,11 +1,11 @@
 #include "mangareader.h"
 
 static void mangareader_search_name_cb(Search_Name *sn);
-static void mangareader_comic_series_data_cb2(Comic_Series *cs);
-static void mangareader_comic_series_data_cb(Comic_Series *cs);
+static void mangareader_comic_series_data_cb2(Comic_Series_Data *csd);
+static void mangareader_comic_series_data_cb(Comic_Series_Data *csd);
 static void mangareader_comic_page_data_cb(Comic_Page *cp);
-static void mangareader_comic_page_init_cb(Comic_Page *cp);
-static void mangareader_series_init_cb(Comic_Series *cs);
+static Comic_Provider *mangareader_comic_page_init_cb(void);
+static Comic_Provider *mangareader_series_init_cb(void);
 
 static Comic_Provider search_provider =
 {
@@ -123,11 +123,7 @@ mangareader_search_name_cb(Search_Name *sn)
              sr = search_result_add(sn);
              sr->image.href = eina_stringshare_add_length((char*)index_start, p - index_start);
              INF("href=%s", sr->image.href);
-             {
-                sr->image.ecu = ecore_con_url_new(sr->image.href);
-                ecore_con_url_data_set(sr->image.ecu, &sr->image);
-                ecore_con_url_get(sr->image.ecu);
-             }
+             search_result_image_fetch(sr);
              break;
            case 1: /* result link */
              sr = EINA_INLIST_CONTAINER_GET(sn->results->last, Search_Result);
@@ -179,44 +175,50 @@ mangareader_search_name_cb(Search_Name *sn)
 
 
 static void
-mangareader_comic_series_data_cb2(Comic_Series *cs)
+mangareader_comic_series_data_cb2(Comic_Series_Data *csd)
 {
-   const char *base, *buf, *p;
+   const char *base, *buf;
+   char *p;
    size_t size;
+   Comic_Chapter *cc = NULL;
+   Comic_Chapter_Item *cci = NULL;
 
-   base = buf = eina_strbuf_string_get(cs->buf);
-   size = eina_strbuf_length_get(cs->buf);
-   buf += cs->idx[0];
+   base = buf = eina_strbuf_string_get(csd->buf);
+   size = eina_strbuf_length_get(csd->buf);
+   buf += csd->idx[0];
    p = strstr(buf, "readmangasum");
    if (!p) abort(); /* FIXME */
-   if (size < (unsigned int)((p + 46 + cs->namelen) - base)) abort(); /* FIXME */
-   buf = p + 46 + cs->namelen;
+   if (size < (unsigned int)((p + 46 + csd->cs->namelen) - base)) abort(); /* FIXME */
+   buf = p + 46 + csd->cs->namelen;
    p = strchr(buf, '<');
    if (!p) abort(); /* FIXME */
-   cs->desc = util_markup_to_utf8(buf, p);
-   series_view_desc_set(cs->e, cs);
-   INF("desc=%s", cs->desc);
+   comic_series_desc_set(csd, buf, p);
+   series_view_desc_set(csd->cs->e, csd->cs);
    if ((int)size < (p + 195) - base) abort(); /* FIXME */
    buf = p + 195;
    /* FIXME: size */
    while (1)
      {
-        Comic_Chapter *cc;
         char *pp;
+        const char *href;
+        Eina_Bool decimal;
+        double number;
         
         if (buf[0] != '/') break;
         p = strchr(buf, '"');
         if (!p) abort(); /* FIXME */
-        cc = comic_chapter_new(cs, EINA_FALSE);
         pp = strndupa(buf, p - buf);
-        cc->href = eina_stringshare_printf("%s%s", cs->provider->url, pp);
-        buf = p + cs->namelen + 3;
-        cc->number = strtod(buf, &pp);
+        href = eina_stringshare_printf("%s%s", csd->provider->url, pp);
+        buf = p + csd->cs->namelen + 3;
+        number = strtod(buf, &pp);
         if (pp - buf > 2)
           {
              buf = memchr(buf, '.', pp - buf);
-             if (buf) cc->decimal = EINA_TRUE;
+             if (buf) decimal = EINA_TRUE;
           }
+        cc = comic_chapter_new(csd, number, EINA_FALSE);
+        cc->decimal = decimal;
+        cc->href = href;
         buf = pp + 7;
         p = strchr(buf, '<');
         if (!p) abort(); /* FIXME */
@@ -225,38 +227,47 @@ mangareader_comic_series_data_cb2(Comic_Series *cs)
         buf = p + 10;
         p = strchr(buf, '<');
         if (!p) abort(); /* FIXME */
-        cc->date = eina_stringshare_add_length(buf, p - buf);
+        {
+           struct tm t;
+           const char *d = buf;
+
+           memset(&t, 0, sizeof(struct tm));
+           if (d[0] == '0') d++;
+           if (strptime(d, "%m/%d/%Y", &t))
+             cc->date = mktime(&t);
+        }
+        cci = comic_chapter_item_chapter_add(cc, cci);
         buf = p + 63;
-        INF("chapter: %g - %s", cc->number, cc->name);
+        //INF("chapter: %g - %s", cc->number, cc->name);
      }
 }
 
 static void
-mangareader_comic_series_data_cb(Comic_Series *cs)
+mangareader_comic_series_data_cb(Comic_Series_Data *csd)
 {
    const char *data;
    size_t size;
 
-   if (cs->done)
+   if (csd->done)
      {
-        mangareader_comic_series_data_cb2(cs);
+        mangareader_comic_series_data_cb2(csd);
         return;
      }
 
-   data = eina_strbuf_string_get(cs->buf);
-   size = eina_strbuf_length_get(cs->buf);
-   if ((!cs->idx[0]) && (!cs->idx[1]))
-     cs->idx[0] = cs->provider->search_index + (MANGAREADER_SERIES_INDEX_NAME_COUNT * cs->namelen);
-   //DBG("(idx=%u,size=%d)", cs->idx[0], size);
+   data = eina_strbuf_string_get(csd->buf);
+   size = eina_strbuf_length_get(csd->buf);
+   if ((!csd->idx[0]) && (!csd->idx[1]))
+     csd->idx[0] = csd->provider->search_index + (MANGAREADER_SERIES_INDEX_NAME_COUNT * csd->cs->namelen);
+   //DBG("(idx=%u,size=%d)", csd->idx[0], size);
    /* discard unneeded bytes, hooray */
-   for (; (cs->idx[1] < sizeof(cs->provider->index_start)) && (cs->provider->index_start[cs->idx[1]] || cs->provider->index_char[cs->idx[1]]); cs->idx[1]++)
+   for (; (csd->idx[1] < sizeof(csd->provider->index_start)) && (csd->provider->index_start[csd->idx[1]] || csd->provider->index_char[csd->idx[1]]); csd->idx[1]++)
      {
         const char *p, *index_start;
         unsigned int jump = 0;
 
-        //DBG("(idx=%u,size=%d)", cs->idx[0], size);
-        if (cs->idx[1] == 1) jump = MANGAREADER_SERIES_INDEX_POST_IMAGE_NAME_COUNT * cs->namelen;
-        if (cs->idx[0] + cs->provider->index_start[cs->idx[1]] + jump > (unsigned int)size)
+        //DBG("(idx=%u,size=%d)", csd->idx[0], size);
+        if (csd->idx[1] == 1) jump = MANGAREADER_SERIES_INDEX_POST_IMAGE_NAME_COUNT * csd->cs->namelen;
+        if (csd->idx[0] + csd->provider->index_start[csd->idx[1]] + jump > size)
           {
              /*
              char *buf;
@@ -265,65 +276,55 @@ mangareader_comic_series_data_cb(Comic_Series *cs)
              */
              return;
           }
-        index_start = data + cs->idx[0] + cs->provider->index_start[cs->idx[1]] + jump;
-        if (cs->provider->index_char[cs->idx[1]])
+        index_start = data + csd->idx[0] + csd->provider->index_start[csd->idx[1]] + jump;
+        if (csd->provider->index_char[csd->idx[1]])
           {
-             p = memchr(index_start, cs->provider->index_char[cs->idx[1]], size - cs->idx[0]);
+             p = memchr(index_start, csd->provider->index_char[csd->idx[1]], size - csd->idx[0]);
              if (!p) return;
           }
-        switch (cs->idx[1])
+        switch (csd->idx[1])
           {
            case 0: /* series image */
-             cs->image.href = eina_stringshare_add_length((char*)index_start, p - index_start);
-             INF("href=%s", cs->image.href);
-             {
-                cs->image.ecu = ecore_con_url_new(cs->image.href);
-                ecore_con_url_data_set(cs->image.ecu, &cs->image);
-                ecore_con_url_get(cs->image.ecu);
-             }
+             csd->image.href = eina_stringshare_add_length(index_start, p - index_start);
+             INF("href=%s", csd->image.href);
+             comic_series_image_fetch(csd);
              break;
            case 1: /* alt name */
              if (p - index_start > 0)
                {
-                  cs->alt_name = eina_stringshare_add_length((char*)index_start, p - index_start);
-                  INF("alt_name=%s", cs->alt_name);
-                  series_view_title_set(cs->e, cs);
+                  comic_series_alt_name_set(csd, index_start, p);
+                  series_view_title_set(csd->cs->e, csd->cs);
                }
              break;
            case 2: /* year */
-             errno = 0;
-             cs->year = strtoul((char*)index_start, NULL, 10);
-             INF("year=%u", cs->total);
-             series_view_year_set(cs->e, cs);
-             if (errno) {/* FIXME */}
+             comic_series_year_set(csd, index_start);
+             series_view_year_set(csd->cs->e, csd->cs);
              break;
            case 3: /* completed or not */
-             cs->completed = memcmp(index_start, "Ongoing", 7);
-             series_view_chapters_set(cs->e, cs);
+             csd->cs->completed = memcmp(index_start, "Ongoing", 7);
+             series_view_chapters_set(csd->cs->e, csd->cs);
              break;
            case 4: /* author */
              if (p - index_start > 0)
                {
-                  cs->author = eina_stringshare_add_length((char*)index_start, p - index_start);
-                  INF("author=%s", cs->author);
-                  series_view_author_set(cs->e, cs);
+                  comic_series_author_set(csd, index_start, p);
+                  series_view_author_set(csd->cs->e, csd->cs);
                }
              break;
            case 5: /* artist */
              if (p - index_start > 0)
                {
-                  cs->artist = eina_stringshare_add_length((char*)index_start, p - index_start);
-                  INF("artist=%s", cs->artist);
-                  series_view_artist_set(cs->e, cs);
+                  comic_series_artist_set(csd, index_start, p);
+                  series_view_artist_set(csd->cs->e, csd->cs);
                }
              break;
            case 6:
              break;
            default:
-             cs->idx[1]++;
+             csd->idx[1]++;
              return;
           }
-        cs->idx[0] = p - data;
+        csd->idx[0] = p - data;
      }
 }
 
@@ -338,7 +339,7 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
    size = eina_strbuf_length_get(cp->buf);
    if ((!cp->idx[0]) && (!cp->idx[1]))
      {
-          cp->idx[0] = cp->provider->search_index + (MANGAREADER_PAGE_INDEX_NAME_COUNT * cp->cc->cs->namelen);
+          cp->idx[0] = cp->provider->search_index + (MANGAREADER_PAGE_INDEX_NAME_COUNT * cp->cc->csd->cs->namelen);
         if (cp->cc->number > 9)
           cp->idx[0] += 8;
         if (cp->cc->number > 99)
@@ -468,20 +469,20 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
      }
 }
 
-static void
-mangareader_comic_page_init_cb(Comic_Page *cp)
+static Comic_Provider *
+mangareader_comic_page_init_cb(void)
 {
-   cp->provider = &page_provider;
+   return &page_provider;
 }
 
-static void
-mangareader_series_init_cb(Comic_Series *cs)
+static Comic_Provider *
+mangareader_series_init_cb(void)
 {
-   cs->provider = &series_provider;
+   return &series_provider;
 }
 
-void
-mangareader_search_init_cb(Search_Name *sn)
+Comic_Provider *
+mangareader_search_init_cb(void)
 {
-   sn->provider = &search_provider;
+   return &search_provider;
 }

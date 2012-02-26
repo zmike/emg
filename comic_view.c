@@ -6,14 +6,14 @@ comic_view_readahead_ensure(EMG *e)
    Comic_Page *cp;
    unsigned int x;
 
-   cp = comic_page_next_get(e->cv.cc->current);
+   cp = comic_page_next_get(e->cv.cci->cc->current);
    if (!cp) return;
    for (x = 0; (x < DEFAULT_PAGE_READAHEAD) && cp; x++, cp = comic_page_next_get(cp))
      {
         if ((!cp->obj) && (!cp->image.ecu) && (!cp->image.buf) && (!cp->buf) && (!cp->ecu))
           comic_page_fetch(cp);
      }
-   cp = comic_page_prev_get(e->cv.cc->current);
+   cp = comic_page_prev_get(e->cv.cci->cc->current);
    if (!cp) return;
    for (x = 0; (x < DEFAULT_PAGE_READBEHIND) && cp; x++, cp = comic_page_prev_get(cp))
      {
@@ -70,8 +70,8 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
    int x;
 
    cp->cc->current = cp;
-   if (e->cv.cc)
-     cpp = e->cv.cc->current;
+   if (e->cv.cci->cc)
+     cpp = e->cv.cci->cc->current;
    for (x = 0; (x < 15) && cpp; x++, cpp = comic_page_prev_get(cpp))
      {
         if (x < 5) continue;
@@ -80,7 +80,7 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
         else
           comic_page_data_del(cpp);
      }
-   e->cv.cc = cp->cc;
+   e->cv.cci = cp->cc->cci;
    if (cp->image.ecu || cp->ecu) return; /* currently downloading */
    if ((!cp->obj) && (!cp->image.buf))
      {
@@ -102,6 +102,7 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
 
    cp->scr = elm_scroller_add(e->win);
    EXPAND(cp->scr);
+   FILL(cp->scr);
    cp->obj = elm_icon_add(e->win);
    EXPAND(cp->obj);
    ALIGN(cp->obj, 0.5, 0);
@@ -113,12 +114,12 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
    elm_object_content_set(cp->scr, cp->obj);
    evas_object_show(cp->scr);
 
-   size = cp->cc->cs->namelen + sizeof(" ABCD:  - XYZ") + (cp->cc->name ? strlen(cp->cc->name) : 0);
+   size = cp->cc->csd->cs->namelen + sizeof(" ABCD:  - XYZ") + (cp->cc->name ? strlen(cp->cc->name) : 0);
    buf = alloca(size);
    if (cp->cc->decimal)
-     snprintf(buf, size, "%s %g%s%s - %u", cp->cc->cs->name, cp->cc->number, cp->cc->name ? ": " : "", cp->cc->name ?: "", cp->number);
+     snprintf(buf, size, "%s %g%s%s - %u", cp->cc->csd->cs->name, cp->cc->number, cp->cc->name ? ": " : "", cp->cc->name ?: "", cp->number);
    else
-     snprintf(buf, size, "%s %d%s%s - %u", cp->cc->cs->name, (int)cp->cc->number, cp->cc->name ? ": " : "", cp->cc->name ?: "", cp->number);
+     snprintf(buf, size, "%s %d%s%s - %u", cp->cc->csd->cs->name, (int)cp->cc->number, cp->cc->name ? ": " : "", cp->cc->name ?: "", cp->number);
    cpn = comic_page_next_get(cp);
    cpp = comic_page_prev_get(cp);
    next = cpn ? e->cv.next : NULL;
@@ -130,20 +131,20 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
 }
 
 void
-comic_view_chapter_set(EMG *e, Comic_Chapter *cc)
+comic_view_chapter_set(EMG *e, Comic_Chapter_Item *cci)
 {
    Comic_Page *cp;
-   if (e->cv.cc && (e->cv.cc != cc))
-     ecore_job_add((Ecore_Cb)comic_chapter_images_clear, e->cv.cc);
-   cc->cs->current = e->cv.cc = cc;
-   if (cc->pages)
+   if (e->cv.cci && (e->cv.cci != cci))
+     ecore_job_add((Ecore_Cb)comic_chapter_images_clear, e->cv.cci->cc);
+   cci->cc->csd->cs->current = e->cv.cci = cci;
+   if (cci->cc->pages)
      {
-        cp = EINA_INLIST_CONTAINER_GET(cc->pages, Comic_Page);
+        cp = EINA_INLIST_CONTAINER_GET(cci->cc->pages, Comic_Page);
         comic_view_page_set(e, cp);
         return;
      }
-   cp = comic_page_new(cc, 1);
-   cp->href = eina_stringshare_ref(cc->href);
+   cp = comic_page_new(cci->cc, 1);
+   cp->href = eina_stringshare_ref(cci->cc->href);
    comic_view_page_set(e, cp);
    comic_page_fetch(cp);
 }
@@ -153,9 +154,9 @@ comic_view_page_prev(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNU
 {
    Comic_Page *cp;
 
-   if ((!e->cv.cc) || (!e->cv.cc->current)) return;
+   if ((!e->cv.cci) || (!e->cv.cci->cc->current)) return;
 
-   cp = comic_page_prev_get(e->cv.cc->current);
+   cp = comic_page_prev_get(e->cv.cci->cc->current);
    if (!cp) return;
    comic_view_page_set(e, cp);
 }
@@ -165,9 +166,9 @@ comic_view_page_next(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNU
 {
    Comic_Page *cp;
 
-   if ((!e->cv.cc) || (!e->cv.cc->current)) return;
+   if ((!e->cv.cci) || (!e->cv.cci->cc->current)) return;
 
-   cp = comic_page_next_get(e->cv.cc->current);
+   cp = comic_page_next_get(e->cv.cci->cc->current);
    if (!cp) return;
    comic_view_page_set(e, cp);
 }

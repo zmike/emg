@@ -12,7 +12,7 @@ comic_page_new(Comic_Chapter *cc, unsigned int id)
    cp->image.identifier = IDENTIFIER_COMIC_PAGE_IMAGE;
    cp->image.parent = cp;
    cp->number = id;
-   INF("NEW PAGE FOR %g: %u", cc->number, id);
+   //INF("NEW PAGE FOR %g: %u", cc->number, id);
    cc->page_count++;
    if (cc->pages)
      {
@@ -35,7 +35,7 @@ comic_page_new(Comic_Chapter *cc, unsigned int id)
      }
    if (!in)
      cc->pages = eina_inlist_append(cc->pages, EINA_INLIST_GET(cp));
-   cc->cs->provider->init_cb(cp);
+   cp->provider = cc->provider->init_cb();
    return cp;
 }
 
@@ -59,9 +59,9 @@ comic_page_fetch(Comic_Page *cp)
      }
    if (!ecore_con_url_get(ecu)) abort(); /* FIXME */
    if (cp->cc->decimal)
-     INF("PAGE FETCH: %s - %g:%u: %s", cp->cc->cs->name, cp->cc->number, cp->number, ecore_con_url_url_get(ecu));
+     INF("PAGE FETCH: %s - %g:%u: %s", cp->cc->csd->cs->name, cp->cc->number, cp->number, ecore_con_url_url_get(ecu));
    else
-     INF("PAGE FETCH: %s - %d:%u: %s", cp->cc->cs->name, (int)cp->cc->number, cp->number, ecore_con_url_url_get(ecu));
+     INF("PAGE FETCH: %s - %d:%u: %s", cp->cc->csd->cs->name, (int)cp->cc->number, cp->number, ecore_con_url_url_get(ecu));
 }
 
 void
@@ -92,12 +92,12 @@ comic_page_prev_get(Comic_Page *cp)
 {
    if (!EINA_INLIST_GET(cp)->prev)
      {
-        Comic_Chapter *cc;
+        Comic_Chapter_Item *cci;
 
-        if (!EINA_INLIST_GET(cp->cc)->prev) return NULL;
-        cc = EINA_INLIST_CONTAINER_GET(EINA_INLIST_GET(cp->cc)->prev, Comic_Chapter);
-        if (!cc->pages) return NULL;
-        return EINA_INLIST_CONTAINER_GET(cc->pages->last, Comic_Page);
+        cci = comic_chapter_item_prev_get(cp->cc->cci);
+        if (!cci) return NULL;
+        if (!cci->cc->pages) return NULL;
+        return EINA_INLIST_CONTAINER_GET(cci->cc->pages->last, Comic_Page);
      }
    return EINA_INLIST_CONTAINER_GET(EINA_INLIST_GET(cp)->prev, Comic_Page);
 }
@@ -107,12 +107,12 @@ comic_page_next_get(Comic_Page *cp)
 {
    if (!EINA_INLIST_GET(cp)->next)
      {
-        Comic_Chapter *cc;
+        Comic_Chapter_Item *cci;
 
-        if (!EINA_INLIST_GET(cp->cc)->next) return NULL;
-        cc = EINA_INLIST_CONTAINER_GET(EINA_INLIST_GET(cp->cc)->next, Comic_Chapter);
-        if (!cc->pages) return NULL;
-        return EINA_INLIST_CONTAINER_GET(cc->pages, Comic_Page);
+        cci = comic_chapter_item_next_get(cp->cc->cci);
+        if (!cci) return NULL;
+        if (!cci->cc->pages) return NULL;
+        return EINA_INLIST_CONTAINER_GET(cci->cc->pages, Comic_Page);
      }
    return EINA_INLIST_CONTAINER_GET(EINA_INLIST_GET(cp)->next, Comic_Page);
 }
@@ -120,5 +120,5 @@ comic_page_next_get(Comic_Page *cp)
 Eina_Bool
 comic_page_current(Comic_Page *cp)
 {
-   return cp == cp->cc->cs->e->cv.cc->current;
+   return cp == cp->cc->csd->cs->e->cv.cci->cc->current;
 }

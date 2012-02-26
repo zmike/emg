@@ -43,3 +43,11 @@ search_result_tag_add(Search_Result *sr, const char *index_start, const char *ta
    sr->tags = eina_list_append(sr->tags, t);
    sr->tags_len += (tag - index_start);
 }
+
+void
+search_result_image_fetch(Search_Result *sr)
+{
+   sr->image.ecu = ecore_con_url_new(sr->image.href);
+   ecore_con_url_data_set(sr->image.ecu, &sr->image);
+   if (!ecore_con_url_get(sr->image.ecu)) abort();
+}

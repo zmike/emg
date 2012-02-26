@@ -17,6 +17,7 @@
 
 extern int _emg_log_dom;
 
+#define BREAK raise(SIGINT)
 
 #define WEIGHT evas_object_size_hint_weight_set
 #define ALIGN evas_object_size_hint_align_set
@@ -26,9 +27,8 @@ extern int _emg_log_dom;
 #define IDENTIFIER_COMIC_PAGE_IMAGE 701
 #define IDENTIFIER_COMIC_PAGE 700
 
-#define IDENTIFIER_COMIC_CHAPTER 662
-#define IDENTIFIER_COMIC_SERIES 661
-#define IDENTIFIER_COMIC_IMAGE 660
+#define IDENTIFIER_COMIC_SERIES_DATA 661
+#define IDENTIFIER_COMIC_SERIES_IMAGE 660
 
 #define IDENTIFIER_SEARCH_NAME 11
 #define IDENTIFIER_SEARCH_IMAGE 10
@@ -45,8 +45,11 @@ typedef struct Comic_Chapter Comic_Chapter;
 typedef struct Comic_Page Comic_Page;
 typedef struct Comic_Provider Comic_Provider;
 typedef struct Search_Result_Item Search_Result_Item;
+typedef struct Comic_Series_Data Comic_Series_Data;
+typedef struct Comic_Chapter_Item Comic_Chapter_Item;
+
 typedef void (*Provider_Data_Cb)(void *);
-typedef void (*Provider_Init_Cb)(void *);
+typedef Comic_Provider *(*Provider_Init_Cb)(void);
 
 
 typedef enum EMG_View
@@ -78,7 +81,7 @@ typedef struct Comic_View
    Evas_Object *prev, *next;
    Elm_Object_Item *tb_it;
    Elm_Object_Item *nf_it;
-   Comic_Chapter *cc;
+   Comic_Chapter_Item *cci;
 } Comic_View;
 
 typedef struct Series_View
@@ -139,6 +142,7 @@ struct Search_Name
    EMG *e;
    Ecore_Con_Url *ecu;
    Eina_Strbuf *buf;
+   double pct;
    const char *name;
    unsigned int namelen;
    unsigned int snamelen; /* search escaped namelen */
@@ -211,26 +215,37 @@ struct Comic_Page
 
 struct Comic_Chapter
 {
-   unsigned int identifier;
    EINA_INLIST;
+   Comic_Series_Data *csd;
+   Comic_Provider *provider;
+   Comic_Chapter_Item *cci;
    Comic_Page *current;
-   Comic_Series *cs;
    double number; /* chapter number */
    unsigned int pages_fetched;
    const char *name;
    const char *href;
-   const char *date;
+   time_t date;
    Eina_Inlist *pages;
    unsigned int page_count;
    Eina_Bool decimal : 1;
    Eina_Bool done : 1;
 };
 
+struct Comic_Chapter_Item
+{
+   EINA_INLIST;
+   Comic_Chapter *cc; /* currently used comic chapter */
+   Elm_Object_Item *it;
+   const char *name;
+   const char *href;
+   time_t date;
+   Eina_Inlist *chapters;
+   unsigned int chapter_count;
+};
+
 struct Comic_Series
 {
-   unsigned int identifier;
    EMG *e;
-   Eina_Strbuf *buf;
    unsigned int total;
    const char *desc;
    const char *name;
@@ -241,13 +256,24 @@ struct Comic_Series
    unsigned int namelen;
    Eina_Inlist *chapters;
    Eina_Inlist *populate_job;
-   Ecore_Con_Url *ecu;
-   Comic_Chapter *current;
-   Comic_Image image;
-   unsigned int idx[2]; /* position, iterator */
-   Comic_Provider *provider;
-   Eina_Bool done : 1;
+   Eina_List *providers;
+   Comic_Series_Data *csd;
+   Comic_Chapter_Item *current;
    Eina_Bool completed : 1;
+};
+
+struct Comic_Series_Data
+{
+  unsigned int identifier;
+  Ecore_Con_Url *ecu;
+  Eina_Strbuf *buf;
+  Comic_Series *cs;
+  Comic_Provider *provider;
+  Eina_Inlist *chapters;
+  unsigned int chapter_count; /* for use by parsers */
+  unsigned int idx[2]; /* position, iterator */
+  Comic_Image image;
+  Eina_Bool done : 1;
 };
 
 void search_name_free(Search_Name *sn);
@@ -269,11 +295,12 @@ void search_result_item_update(Search_Result *sr);
 void search_result_free(Search_Result *sr);
 Search_Result *search_result_add(Search_Name *sn);
 void search_result_tag_add(Search_Result *sr, const char *index_start, const char *tag);
+void search_result_image_fetch(Search_Result *sr);
 
 void comic_view_readahead_ensure(EMG *e);
 void comic_view_page_set(EMG *e, Comic_Page *cp);
 void comic_view_image_update(Comic_Page *cp);
-void comic_view_chapter_set(EMG *e, Comic_Chapter *cc);
+void comic_view_chapter_set(EMG *e, Comic_Chapter_Item *cci);
 void comic_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
 void comic_view_page_prev(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__);
 void comic_view_page_next(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__);
@@ -281,7 +308,7 @@ void comic_view_page_next(EMG *e, Evas_Object *obj __UNUSED__, void *event_info 
 void series_view_populate(Comic_Series *cs);
 void series_view_clear(EMG *e);
 void series_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
-char *series_view_list_text_cb(Comic_Chapter *cc, Evas_Object *obj, const char *part);
+char *series_view_list_text_cb(Comic_Chapter_Item *cci, Evas_Object *obj, const char *part);
 void series_view_author_set(EMG *e, Comic_Series *cs);
 void series_view_artist_set(EMG *e, Comic_Series *cs);
 void series_view_chapters_set(EMG *e, Comic_Series *cs);
@@ -292,14 +319,31 @@ void series_view_image_set(EMG *e, Eina_Binbuf *buf);
 void series_view_list_init(EMG *e, Evas_Object *list);
 
 Comic_Series *comic_series_find(EMG *e, const char *name);
-Comic_Series *comic_series_new(Search_Result *sr);
-void comic_series_parser(Comic_Series *cs);
+Comic_Series *comic_series_new(Search_Result_Item *sri);
+Comic_Chapter *comic_series_chapter_first_get(Comic_Series *cs);
+Comic_Chapter *comic_series_chapter_last_get(Comic_Series *cs);
+void comic_series_parser(Comic_Series_Data *csd);
+Eina_Bool comic_series_data_current(Comic_Series_Data *csd);
+void comic_series_alt_name_set(Comic_Series_Data *csd, const char *index_start, const char *p);
+void comic_series_author_set(Comic_Series_Data *csd, const char *index_start, const char *p);
+void comic_series_artist_set(Comic_Series_Data *csd, const char *index_start, const char *p);
+void comic_series_desc_set(Comic_Series_Data *csd, const char *index_start, const char *p);
+void comic_series_year_set(Comic_Series_Data *csd, const char *index_start);
+void comic_series_image_fetch(Comic_Series_Data *csd);
 
-Comic_Chapter *comic_chapter_new(Comic_Series *cs, Eina_Bool before);
+void comic_chapter_free(Comic_Chapter *cc);
+Comic_Chapter *comic_chapter_new(Comic_Series_Data *csd, double number, Eina_Bool prepend);
 void comic_chapter_images_clear(Comic_Chapter *cc);
 void comic_chapter_data_clear(Comic_Chapter *cc);
+Comic_Chapter *comic_chapter_merge(Comic_Series_Data *csd, Comic_Chapter *cc_ref, Comic_Chapter *cc_new);
 Comic_Chapter *comic_chapter_prev_get(Comic_Chapter *cc);
 Comic_Chapter *comic_chapter_next_get(Comic_Chapter *cc);
+
+Comic_Chapter_Item *comic_chapter_item_chapter_add(Comic_Chapter *cc, Comic_Chapter_Item *cci);
+void comic_chapter_item_chapter_del(Comic_Chapter *cc);
+void comic_chapter_item_update(Comic_Chapter *cc);
+Comic_Chapter_Item *comic_chapter_item_prev_get(Comic_Chapter_Item *cci);
+Comic_Chapter_Item *comic_chapter_item_next_get(Comic_Chapter_Item *cci);
 
 void comic_page_image_del(Comic_Page *cp);
 void comic_page_data_del(Comic_Page *cp);
@@ -310,8 +354,8 @@ Comic_Page *comic_page_prev_get(Comic_Page *cp);
 Comic_Page *comic_page_next_get(Comic_Page *cp);
 Eina_Bool comic_page_current(Comic_Page *cp);
 
-void batoto_search_init_cb(Search_Name *sn);
-void mangareader_search_init_cb(Search_Name *sn);
+Comic_Provider *batoto_search_init_cb(void);
+Comic_Provider *mangareader_search_init_cb(void);
 
 const char *util_markup_to_utf8(const char *start, const char *p);
 #endif

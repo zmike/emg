@@ -28,14 +28,20 @@ _url_progress(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Pr
 {
    int *identifier;
    Search_Name *sn;
+   double pct;
 
    identifier = ecore_con_url_data_get(ev->url_con);
    switch (*identifier)
      {
       case IDENTIFIER_SEARCH_NAME:
         sn = ecore_con_url_data_get(ev->url_con);
+        pct = elm_progressbar_value_get(sn->e->sw.progress);
+        pct -= sn->pct;
         if (sn->e->sw.progress && (ev->down.now > 0.0) && (ev->down.total > 0.0))
-          elm_progressbar_value_set(sn->e->sw.progress, ev->down.now / ev->down.total);
+          {
+             sn->pct = ev->down.now / ev->down.total;
+             elm_progressbar_value_set(sn->e->sw.progress, pct + sn->pct);
+          }
         break;
       default:
         break;
@@ -67,7 +73,7 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
         }
         break;
       case IDENTIFIER_SEARCH_IMAGE:
-      case IDENTIFIER_COMIC_IMAGE:
+      case IDENTIFIER_COMIC_SERIES_IMAGE:
       case IDENTIFIER_COMIC_PAGE_IMAGE:
         {
            Comic_Image *ci;
@@ -81,14 +87,14 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            //INF("IMGURL: %s", ci->href);
            break;
         }
-      case IDENTIFIER_COMIC_SERIES:
+      case IDENTIFIER_COMIC_SERIES_DATA:
         {
-           Comic_Series *cs;
+           Comic_Series_Data *csd;
 
-           cs = ecore_con_url_data_get(ev->url_con);
-           if (!cs->buf) cs->buf = eina_strbuf_new();
-           eina_strbuf_append_length(cs->buf, (char*)ev->data, ev->size);
-           comic_series_parser(cs);
+           csd = ecore_con_url_data_get(ev->url_con);
+           if (!csd->buf) csd->buf = eina_strbuf_new();
+           eina_strbuf_append_length(csd->buf, (char*)ev->data, ev->size);
+           comic_series_parser(csd);
            break;
         }
       case IDENTIFIER_COMIC_PAGE:
@@ -124,22 +130,44 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 
            ci = ecore_con_url_data_get(ev->url_con);
            ci->ecu = NULL;
-           INF("IMGURL DONE: %s", ci->href);
            sr = ci->parent;
-           search_result_item_update(sr);
+           if (ev->status == 200)
+             {
+                INF("IMGURL DONE: %s", ci->href);
+                search_result_item_update(sr);
+             }
+           else
+             {
+                WRN("IMGURL FAILED: %s", ci->href);
+                if (ci->buf) eina_binbuf_free(ci->buf);
+                ci->buf = NULL;
+                search_result_image_fetch(sr);
+             }
            break;
         }
-      case IDENTIFIER_COMIC_IMAGE:
+      case IDENTIFIER_COMIC_SERIES_IMAGE:
         {
            Comic_Image *ci;
-           Comic_Series *cs;
+           Comic_Series_Data *csd;
 
            ci = ecore_con_url_data_get(ev->url_con);
            ci->ecu = NULL;
-           INF("IMGURL DONE: %s", ci->href);
-           cs = ci->parent;
-           if (cs != cs->e->sv.cs) break;
-           series_view_image_set(cs->e, ci->buf);
+           csd = ci->parent;
+           if (ev->status == 200)
+             {
+                INF("IMGURL DONE: %s", ci->href);
+                if (csd->cs != csd->cs->e->sv.cs) break;
+                  series_view_image_set(csd->cs->e, ci->buf);
+             }
+           else
+             {
+                WRN("IMGURL FAILED: %s", ci->href);
+                if (ci->buf) eina_binbuf_free(ci->buf);
+                ci->buf = NULL;
+                comic_series_image_fetch(csd);
+             }
+           
+
            break;
         }
       case IDENTIFIER_COMIC_PAGE_IMAGE:
@@ -150,9 +178,18 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            ci = ecore_con_url_data_get(ev->url_con);
            ci->ecu = NULL;
            cp = ci->parent;
-           INF("PAGE %u IMG DONE: %s", cp->number, ci->href);
+           if (ev->status == 200)
+             {
+                INF("PAGE %g:%u IMG DONE (%d bytes): %s", cp->cc->number, cp->number, ecore_con_url_received_bytes_get(ev->url_con), ci->href);
+                comic_view_image_update(cp);
+             }
+           else
+             {
+                WRN("PAGE %g:%u IMG FAILED (code %d): %s", cp->cc->number, cp->number, ev->status, ci->href);
+                if (ci->buf) eina_binbuf_free(ci->buf);
+                ci->buf = NULL;
+             }
            comic_view_readahead_ensure(&e);
-           comic_view_image_update(cp);
            if (!comic_page_current(cp)) break;
            comic_view_page_set(&e, cp);
            break;
@@ -171,20 +208,24 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
              elm_object_disabled_set(sn->e->sw.entry, EINA_FALSE);
            break;
         }
-      case IDENTIFIER_COMIC_SERIES:
+      case IDENTIFIER_COMIC_SERIES_DATA:
         {
-           Comic_Series *cs;
+           Comic_Series_Data *csd;
 
-           cs = ecore_con_url_data_get(ev->url_con);
-           cs->done = EINA_TRUE;
-           cs->ecu = NULL;
-           comic_series_parser(cs);
-           eina_strbuf_free(cs->buf);
-           cs->buf = NULL;
-           if (e.sv.cs == cs)
+           csd = ecore_con_url_data_get(ev->url_con);
+           csd->done = EINA_TRUE;
+           csd->ecu = NULL;
+           comic_series_parser(csd);
+           eina_strbuf_free(csd->buf);
+           csd->buf = NULL;
+           if (e.sv.cs == csd->cs)
              {
-                series_view_populate(cs);
-                elm_genlist_item_selected_set(elm_genlist_first_item_get(e.sv.list), EINA_TRUE);
+                Elm_Object_Item *it;
+                csd->cs->populate_job = csd->cs->chapters;
+                series_view_populate(csd->cs);
+                it = elm_genlist_first_item_get(e.sv.list);
+                if (it)
+                  elm_genlist_item_selected_set(it, EINA_TRUE);
              }
            elm_object_focus_set(e.sv.list, EINA_TRUE);
            break;
