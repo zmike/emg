@@ -346,6 +346,8 @@ batoto_comic_series_data_cb(Comic_Series_Data *csd)
              p = memchr(index_start, csd->provider->index_char[csd->idx[1]], size - csd->idx[0]);
              if (!p) return;
           }
+        else
+          p = NULL;
         switch (csd->idx[1])
           {
            case 0: /* series image */

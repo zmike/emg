@@ -66,11 +66,11 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
    char *buf;
    size_t size;
    Evas_Object *next, *prev;
-   Comic_Page *cpn, *cpp;
+   Comic_Page *cpn, *cpp = NULL;
    int x;
 
    cp->cc->current = cp;
-   if (e->cv.cci->cc)
+   if (e->cv.cci)
      cpp = e->cv.cci->cc->current;
    for (x = 0; (x < 15) && cpp; x++, cpp = comic_page_prev_get(cpp))
      {

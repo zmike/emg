@@ -114,8 +114,9 @@ search_name_create(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSE
              len = sn->snamelen = eina_strbuf_length_get(sbuf);
              buf2 = eina_strbuf_string_steal(sbuf);
              eina_strbuf_free(sbuf);
+             p = NULL;
           }
-        else
+        else if (sn->provider->replace_str)
           {
              /* avoid realloc */
              buf2 = strdup(buf);
