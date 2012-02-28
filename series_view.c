@@ -13,8 +13,9 @@ _series_view_pick_cb(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *it)
 }
 
 static int
-_series_view_compare_cb(Comic_Chapter_Item *a, Comic_Chapter_Item *b)
+_series_view_compare_cb(Elm_Object_Item *it1, Elm_Object_Item *it2)
 {
+   Comic_Chapter_Item *a = elm_object_item_data_get(it1), *b = elm_object_item_data_get(it2);
    return a->cc->number - b->cc->number;
 }
 
