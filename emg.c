@@ -510,6 +510,7 @@ main(int argc, char *argv[])
    e.sv.itc.func.content_get  = NULL;
    e.sv.itc.func.state_get = NULL;
    e.sv.itc.func.del       = NULL;
+   e.sv.itc.version = ELM_GENLIST_ITEM_CLASS_VERSION;
    e.sv.list = list = elm_genlist_add(e.win);
    EXPAND(list);
    FILL(list);
@@ -525,6 +526,7 @@ main(int argc, char *argv[])
    e.sw.itc.func.state_get = NULL;
    e.sw.itc.func.del       = NULL;
    e.sw.list = list = elm_genlist_add(e.win);
+   e.sw.itc.version = ELM_GENLIST_ITEM_CLASS_VERSION;
    EXPAND(list);
    FILL(list);
    elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
