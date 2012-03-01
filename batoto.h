@@ -1,7 +1,7 @@
 #include "emg.h"
 
 /* actual page data offsets */
-#define BATOTO_SEARCH_INDEX 33671
+#define BATOTO_SEARCH_INDEX 33675
 #define BATOTO_SEARCH_INDEX_START 69
 #define BATOTO_SEARCH_INDEX_START_CHAR '"'
 #define BATOTO_SEARCH_INDEX_POST_HREF 98
