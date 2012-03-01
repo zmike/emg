@@ -278,6 +278,8 @@ window_key(void *data __UNUSED__, Evas *evas __UNUSED__, Evas_Object *obj __UNUS
 static void
 _win_del(void *data __UNUSED__, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__)
 {
+   evas_object_unref(e.cv.prev);
+   evas_object_unref(e.cv.next);
    ecore_main_loop_quit();
 }
 
