@@ -104,6 +104,12 @@ mangareader_search_name_cb(Search_Name *sn)
              return;
           }
         index_start = data + sn->idx[0] + sn->provider->index_start[sn->idx[1]];
+        if (!sn->idx[1])
+          {
+             if (sn->result_count >= 9) index_start++;
+             if (sn->result_count >= 99) index_start++;
+             if (sn->result_count >= 999) index_start++;
+          }
         if (!memcmp(index_start, "adfooter", 8))
           {
              sn->done = EINA_TRUE;
