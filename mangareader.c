@@ -104,12 +104,6 @@ mangareader_search_name_cb(Search_Name *sn)
              return;
           }
         index_start = data + sn->idx[0] + sn->provider->index_start[sn->idx[1]];
-        if (!sn->idx[1])
-          {
-             if (sn->result_count >= 9) index_start++;
-             if (sn->result_count >= 99) index_start++;
-             if (sn->result_count >= 999) index_start++;
-          }
         if (!memcmp(index_start, "adfooter", 8))
           {
              sn->done = EINA_TRUE;
@@ -118,9 +112,15 @@ mangareader_search_name_cb(Search_Name *sn)
              search_view_count_update(sn);
              return;
           }
+        if (!sn->idx[1])
+          {
+             if (sn->result_count >= 9) index_start++;
+             if (sn->result_count >= 99) index_start++;
+             if (sn->result_count >= 999) index_start++;
+          }
         if (sn->provider->index_char[sn->idx[1]])
           {
-             p = memchr(index_start, sn->provider->index_char[sn->idx[1]], size - sn->idx[0]);
+             p = memchr(index_start, sn->provider->index_char[sn->idx[1]], size - (index_start - data));
              if (!p) return;
           }
         switch (sn->idx[1])
