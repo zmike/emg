@@ -1,4 +1,4 @@
-#include "batoto.h"
+#include "module_search_batoto.h"
 
 static void batoto_search_name_cb(Search_Name *sn);
 static void batoto_comic_series_data_cb2(Comic_Series_Data *csd);

@@ -1,4 +1,4 @@
-#include "mangareader.h"
+#include "module_search_mangareader.h"
 
 static void mangareader_search_name_cb(Search_Name *sn);
 static void mangareader_comic_series_data_cb2(Comic_Series_Data *csd);
