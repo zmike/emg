@@ -98,6 +98,9 @@ batoto_search_name_cb(Search_Name *sn)
              search_view_count_update(sn);
              return;
           }
+        if ((sn->idx[1] == 1) && (!memcmp(index_start, "s\"/> ", 5)))
+          /* ongoing series */
+          index_start += 5;
         if (sn->provider->index_char[sn->idx[1]])
           {
              p = memchr(index_start, sn->provider->index_char[sn->idx[1]], size - sn->idx[0]);
@@ -116,6 +119,7 @@ batoto_search_name_cb(Search_Name *sn)
              sr->namelen = p - index_start;
              INF("name=%s", sr->name);
              search_result_item_result_add(sr);
+             if (p[13] != '<') p += 156;
              break;
            case 6:
              sn->idx[1] = -1;
@@ -396,7 +400,7 @@ batoto_comic_series_data_cb(Comic_Series_Data *csd)
              p = strchr(index_start, '<');
              if (!p) return;
              csd->cs->completed = (p - index_start != 7);
-             if ((p - index_start != 7) && (p - index_start != 9)) abort();
+             if ((p - index_start != 7) && (p - index_start != 8)) abort();
              break;
            case 7:
              comic_series_desc_set(csd, index_start, p);
@@ -557,7 +561,7 @@ batoto_comic_page_data_cb(Comic_Page *cp)
         cp->buf = NULL;
         return;
       case 5:
-        index_start += 1500, cp->idx[0] += 1500;
+        index_start += 1400, cp->idx[0] += 1400;
         p = strstr(index_start, "15p");
         if (!p) abort(); /* FIXME */
         index_start = p + 2;
