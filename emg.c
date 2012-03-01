@@ -557,8 +557,8 @@ main(int argc, char *argv[])
    evas_object_resize(win, 640, 712);
    elm_win_center(win, EINA_TRUE, EINA_TRUE);
 
-   e.providers = eina_list_append(e.providers, mangareader_search_init_cb);
-   e.providers = eina_list_append(e.providers, batoto_search_init_cb);
+   e.search_providers = eina_list_append(e.search_providers, mangareader_search_init_cb);
+   e.search_providers = eina_list_append(e.search_providers, batoto_search_init_cb);
    search_view_show(&e, NULL, NULL);
 
    elm_run();

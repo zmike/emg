@@ -117,7 +117,7 @@ typedef struct EMG
    Evas_Object *tb;
    Evas_Object *nf;
    Eina_List *series;
-   Eina_List *providers;
+   Eina_List *search_providers;
    EMG_View view;
 } EMG;
 

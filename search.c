@@ -94,7 +94,7 @@ search_name_create(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSE
    elm_toolbar_item_selected_set(e->sw.tb_it, EINA_TRUE);
    elm_object_disabled_set(e->sw.entry, EINA_TRUE);
    buflen = strlen(buf);
-   EINA_LIST_FOREACH(e->providers, l, cb)
+   EINA_LIST_FOREACH(e->search_providers, l, cb)
      {
         sn = calloc(1, sizeof(Search_Name));
         e->sw.searches = eina_list_append(e->sw.searches, sn);
