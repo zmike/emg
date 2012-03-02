@@ -443,6 +443,8 @@ batoto_comic_page_data_cb(Comic_Page *cp)
                   return;
                }
              cp->idx[0] = p - data;
+             if (size <= cp->idx[0] + 1) abort();
+             cp->idx[0]++;
              index_start = data + cp->idx[0];
           }
         index_start = p;
