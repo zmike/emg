@@ -1,14 +1,14 @@
-#include "module_update_mangaupdates.h"
+#include "module_update_batoto.h"
 #include <Azy.h>
 
-static void mangaupdates_data_cb(Update *u);
+static void batoto_data_cb(Update *u);
 
 static Comic_Provider update_provider =
 {
-   .url = MANGAUPDATES_URL,
-   .search_url = MANGAUPDATES_UPDATE_URL,
-   .priority = MANGAUPDATES_PROVIDER_PRIORITY,
-   .data_cb = (Provider_Data_Cb)mangaupdates_data_cb
+   .url = BATOTO_URL,
+   .search_url = BATOTO_UPDATE_URL,
+   .priority = BATOTO_PROVIDER_PRIORITY,
+   .data_cb = (Provider_Data_Cb)batoto_data_cb
 };
 
 static const char *
@@ -48,7 +48,7 @@ _chnum_parser(Update_Result *ur, const char *vol)
 }
 
 static void
-mangaupdates_data_cb(Update *u)
+batoto_data_cb(Update *u)
 {
    Azy_Net *net;
    Azy_Content *content;
@@ -72,40 +72,48 @@ mangaupdates_data_cb(Update *u)
 
    EINA_LIST_FOREACH((Eina_List*)azy_rss_items_get(rss), l, it)
      {
-        const char *s, *p, *group = NULL;
+        const char *s, *p, *pp;
         Update_Result *ur;
 
         s = azy_rss_item_title_get(it);
-        if (s[0] == '[')
+        p = strstr(s, " - ");
+        if (!p)
           {
-             group = strchr(s + 1, ']');
-             p = group + 1;
+             WRN("Skipping update %s", s);
+             continue;
           }
-        else
-          p = s;
-
-        p = strchr(p, '.');
-        if (!p) continue; /* nobody cares */
-
+        if (strncmp(p + 3, "English", 7))
+          {
+             pp = strstr(p + 3, " - ");
+             if (pp && (!strncmp(pp + 3, "English", 7)))
+               p = pp;
+             else
+               {
+                  DBG("Skipping non-english update %s", s);
+                  continue;
+               }
+          }
         ur = update_result_add(u);
-        {
-           const char *pp;
-
-           pp = memrchr(s, ' ', p - s);
-           while (pp[-1] == ' ') pp--;
-           ur->series_namelen = pp - (group ? group + 1 : s);
-           ur->series_name = eina_stringshare_add_length(group ? group + 1 : s, ur->series_namelen);
-        }
-        if (group)
-          ur->group_name = eina_stringshare_add_length(s + 1, group - (s + 1));
-        _chnum_parser(ur, p - 1);
+        ur->series_namelen = (unsigned int)(p - s);
+        ur->series_name = eina_stringshare_add_length(s, ur->series_namelen);
+        p += 13;
+        pp = strchr(p, ':');
+        if (!pp)
+          {
+             _chnum_parser(ur, p);
+             update_result_item_result_add(ur);
+             continue;
+          }
+        pp = _chnum_parser(ur, p);
+        if (pp)
+          ur->chapter_name = eina_stringshare_add(pp + 1);
         update_result_item_result_add(ur);
      }
    azy_rss_free(rss);
 }
 
 Comic_Provider *
-mangaupdates_update_init_cb(void)
+batoto_update_init_cb(void)
 {
    azy_init();
    return &update_provider;

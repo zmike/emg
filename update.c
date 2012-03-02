@@ -20,15 +20,24 @@ _update_view_pick_gen_cb(void *data, Evas_Object *obj, void *event_info)
 static char *
 update_view_list_text_cb(Update_Result_Item *uri, Evas_Object *obj __UNUSED__, const char *part)
 {
-   char *buf;
-   size_t size;
+   char buf[512];
 
    if (strcmp(part, "elm.text")) return NULL;
 
-   size = uri->namelen + strlen(uri->ur->vol) + sizeof(" ");
-   buf = malloc(size);
-   snprintf(buf, size, "%s %s", uri->name, uri->ur->vol);
-   return buf;
+   /* FIXME: names that include '&' */
+   if (uri->ur->vol_set)
+     {
+        if (uri->ur->num_set)
+          snprintf(buf, sizeof(buf), "%s Vol.%u Ch.%g%s%s", uri->series_name, uri->ur->vol, uri->ur->number, uri->chapter_name ? ": " : "", uri->chapter_name ?: "");
+        else
+          snprintf(buf, sizeof(buf), "%s Vol.%u%s%s", uri->series_name, uri->ur->vol, uri->chapter_name ? ": " : "", uri->chapter_name ?: "");
+     }
+   else if (uri->ur->num_set)
+     snprintf(buf, sizeof(buf), "%s Ch.%g%s%s", uri->series_name, uri->ur->number, uri->chapter_name ? ": " : "", uri->chapter_name ?: "");
+   else
+     snprintf(buf, sizeof(buf), "%s%s%s", uri->series_name, uri->chapter_name ? ": " : "", uri->chapter_name ?: "");
+   
+   return strdup(buf);
 }
 
 void

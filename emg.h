@@ -173,22 +173,26 @@ struct Update_Result
 {
    EMG *e;
    Update_Result_Item *uri;
-   const char *name;
-   unsigned int namelen;
+   const char *series_name;
+   unsigned int series_namelen;
    const char *group_name;
+   const char *chapter_name;
    const char *href;
-   char *vol;
+   unsigned int vol;
    double number;
    Comic_Provider *provider;
+   Eina_Bool vol_set : 1;
+   Eina_Bool num_set : 1;
 };
 
 struct Update_Result_Item
 {
    Elm_Object_Item *it; /* list item */
    Update_Result *ur; /* currently used result */
-   const char *name;
-   unsigned int namelen;
+   const char *series_name;
+   unsigned int series_namelen;
    const char *href;
+   const char *chapter_name;
    const char *group_name;
    Eina_List *results;
 };
@@ -428,6 +432,7 @@ void update_result_item_update(Update_Result *ur);
 Comic_Provider *batoto_search_init_cb(void);
 Comic_Provider *mangareader_search_init_cb(void);
 Comic_Provider *mangaupdates_update_init_cb(void);
+Comic_Provider *batoto_update_init_cb(void);
 
 const char *util_markup_to_utf8(const char *start, const char *p);
 #endif

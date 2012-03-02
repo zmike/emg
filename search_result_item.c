@@ -20,9 +20,9 @@ _search_result_item_update(Search_Result_Item *sri, Search_Result *sr, Eina_Bool
            {
               SET(tags);
               SET(tags_len);
-              if ((!sri->image) && (sr->image.buf || sr->image.ecu))
-                sri->image = &sr->image;
            }
+         if ((!sri->image) && (sr->image.buf || sr->image.ecu))
+           sri->image = &sr->image;
          elm_genlist_item_update(sri->it);
          return;
       }

@@ -16,15 +16,25 @@ _update_result_item_update(Update_Result_Item *uri, Update_Result *ur, Eina_Bool
     ur->uri = uri;
     if (uri->ur && (uri->ur->provider->priority > ur->provider->priority))
       {
+         if (!uri->href)
+           {
+              SET(href);
+           }
+         if (!uri->chapter_name)
+           {
+              SET(chapter_name);
+           }
          elm_genlist_item_update(uri->it);
          return;
       }
     uri->ur = ur;
-    if (ur->name || force)
+    if (ur->series_name || force)
       {
-         SET(name);
-         SET(namelen);
+         SET(series_name);
+         SET(series_namelen);
       }
+    SET(chapter_name);
+    SET(group_name);
     SET(href);
     if (uri->it)
       elm_genlist_item_update(uri->it);
@@ -51,7 +61,13 @@ update_result_item_result_add(Update_Result *ur)
 
    EINA_LIST_FOREACH(ur->e->uv.results, l, uri)
      {
-        if (strcasecmp(ur->name, uri->name)) continue;
+        if (strcasecmp(ur->series_name, uri->series_name)) continue;
+        if (ur->vol_set != uri->ur->vol_set) continue;
+        if (ur->num_set != uri->ur->num_set) continue;
+        if (ur->num_set)
+          {
+             if (ur->number != uri->ur->number) continue;
+          }
         _update_result_item_update(uri, ur, EINA_FALSE);
 
         if (uri->ur == ur)
