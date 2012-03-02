@@ -66,6 +66,15 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            eina_strbuf_append_length(sn->buf, (char*)ev->data, ev->size);
         }
         break;
+      case IDENTIFIER_UPDATE:
+        {
+           Update *u;
+
+           u = ecore_con_url_data_get(ev->url_con);
+           if (!u->buf) u->buf = eina_strbuf_new();
+           eina_strbuf_append_length(u->buf, (char*)ev->data, ev->size);
+        }
+        break;
       case IDENTIFIER_SEARCH_IMAGE:
       case IDENTIFIER_COMIC_SERIES_IMAGE:
       case IDENTIFIER_COMIC_PAGE_IMAGE:
@@ -88,7 +97,6 @@ _url_data(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Data *
            csd = ecore_con_url_data_get(ev->url_con);
            if (!csd->buf) csd->buf = eina_strbuf_new();
            eina_strbuf_append_length(csd->buf, (char*)ev->data, ev->size);
-           comic_series_parser(csd);
            break;
         }
       case IDENTIFIER_COMIC_PAGE:
@@ -199,6 +207,20 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            sn->done = EINA_TRUE;
            if (!(--sn->e->sw.running))
              elm_object_disabled_set(sn->e->sw.entry, EINA_FALSE);
+           eina_strbuf_free(sn->buf);
+           sn->buf = NULL;
+           break;
+        }
+      case IDENTIFIER_UPDATE:
+        {
+           Update *u;
+
+           u = ecore_con_url_data_get(ev->url_con);
+           u->ecu = NULL;
+           u->done = EINA_TRUE;
+           update_parser(u);
+           eina_strbuf_free(u->buf);
+           u->buf = NULL;
            break;
         }
       case IDENTIFIER_COMIC_SERIES_DATA:
@@ -286,7 +308,7 @@ _win_del(void *data __UNUSED__, Evas_Object *obj __UNUSED__, void *event_info __
 int
 main(int argc, char *argv[])
 {
-   Evas_Object *win, *bg, *box, *box2, *entry, *progress, *list, *sep, *scr, *ic;
+   Evas_Object *win, *bg, *box, *box2, *sep;
 
    memset(&e.sw, 0, sizeof(Search_Window));
 
@@ -318,46 +340,6 @@ main(int argc, char *argv[])
    elm_win_resize_object_add(win, box);
    evas_object_show(box);
 
-   e.sw.fr = elm_frame_add(win);
-   WEIGHT(e.sw.fr, EVAS_HINT_EXPAND, 0);
-   FILL(e.sw.fr);
-   elm_box_pack_end(box, e.sw.fr);
-   elm_object_text_set(e.sw.fr, "Search");
-   elm_frame_autocollapse_set(e.sw.fr, EINA_TRUE);
-
-   e.sw.box = elm_box_add(win);
-   EXPAND(e.sw.box);
-   FILL(e.sw.box);
-   elm_box_horizontal_set(e.sw.box, EINA_TRUE);
-   elm_object_content_set(e.sw.fr, e.sw.box);
-   evas_object_show(e.sw.box);
-
-   e.sw.progress = progress = elm_progressbar_add(e.win);
-   WEIGHT(progress, EVAS_HINT_EXPAND, 0.0);
-   FILL(progress);
-   elm_box_pack_end(e.sw.box, progress);
-   elm_progressbar_value_set(progress, 0.0);
-   elm_progressbar_horizontal_set(progress, EINA_TRUE);
-   evas_object_show(progress);
-
-   e.sw.entry = entry = elm_entry_add(win);
-   WEIGHT(entry, 0.5, EVAS_HINT_EXPAND);
-   ALIGN(entry, EVAS_HINT_FILL, 0.5);
-   elm_entry_scrollable_set(entry, EINA_TRUE);
-   elm_entry_single_line_set(entry, EINA_TRUE);
-   elm_entry_cnp_textonly_set(entry, EINA_TRUE);
-   elm_entry_scrollbar_policy_set(entry, ELM_SCROLLER_POLICY_AUTO, ELM_SCROLLER_POLICY_OFF);
-   elm_entry_cursor_end_set(entry);
-   /* TEMP */
-   elm_entry_entry_set(entry, "tower of god");
-
-   elm_entry_select_all(entry);
-
-   elm_box_pack_end(e.sw.box, entry);
-   evas_object_show(entry);
-   evas_object_smart_callback_add(entry, "activated", (Evas_Smart_Cb)search_name_create, &e);
-   evas_object_show(e.sw.fr);
-
    e.hbox = box2 = elm_box_add(win);
    EXPAND(box2);
    FILL(box2);
@@ -374,6 +356,7 @@ main(int argc, char *argv[])
    elm_toolbar_icon_order_lookup_set(e.tb, ELM_ICON_LOOKUP_FDO);
    elm_toolbar_always_select_mode_set(e.tb, EINA_TRUE);
    {
+      e.uv.tb_it = elm_toolbar_item_append(e.tb, NULL, "Recently Updated", (Evas_Smart_Cb)update_view_show, &e);
       e.sw.tb_it = elm_toolbar_item_append(e.tb, "system-search", "Search Results", (Evas_Smart_Cb)search_view_show, &e);
       e.sv.tb_it = elm_toolbar_item_append(e.tb, NULL, "Current Series", (Evas_Smart_Cb)series_view_show, &e);
       e.cv.tb_it = elm_toolbar_item_append(e.tb, "view-presentation", "Reader", (Evas_Smart_Cb)comic_view_show, &e);
@@ -392,151 +375,12 @@ main(int argc, char *argv[])
    elm_box_pack_end(box2, e.nf);
    evas_object_show(e.nf);
 
-   e.cv.nf = elm_naviframe_add(win);
-   EXPAND(e.cv.nf);
-   FILL(e.cv.nf);
-   e.cv.nf_it = elm_naviframe_item_simple_push(e.nf, e.cv.nf);
-   evas_object_show(e.cv.nf);
+   comic_view_create(&e, win);
 
-   e.cv.prev = elm_button_add(win);
-   evas_object_ref(e.cv.prev);
-   FILL(e.cv.prev);
-   ic = elm_icon_add(win);
-   FILL(ic);
-   elm_icon_standard_set(ic, "go-previous");
-   evas_object_show(ic);
-   elm_object_part_content_set(e.cv.prev, "icon", ic);
-   evas_object_smart_callback_add(e.cv.prev, "clicked", (Evas_Smart_Cb)comic_view_page_prev, &e);
-
-   e.cv.next = elm_button_add(win);
-   evas_object_ref(e.cv.next);
-   FILL(e.cv.next);
-   ic = elm_icon_add(win);
-   FILL(ic);
-   elm_icon_standard_set(ic, "go-next");
-   evas_object_show(ic);
-   elm_object_part_content_set(e.cv.next, "icon", ic);
-   evas_object_smart_callback_add(e.cv.next, "clicked", (Evas_Smart_Cb)comic_view_page_next, &e);
-
-   e.sv.scr = scr = elm_scroller_add(win);
-   elm_scroller_policy_set(scr, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
-   EXPAND(scr);
-   FILL(scr);
-   e.sv.nf_it = elm_naviframe_item_simple_push(e.nf, scr);
-   evas_object_show(scr);
-
-   e.sv.box = box = elm_box_add(win);
-   EXPAND(box);
-   FILL(box);
-   elm_object_content_set(scr, box);
-   evas_object_show(box);
-
-   e.sv.title_lbl = elm_label_add(e.win);
-   WEIGHT(e.sv.title_lbl, EVAS_HINT_EXPAND, 0);
-   elm_box_pack_end(box, e.sv.title_lbl);
-   evas_object_show(e.sv.title_lbl);
-
-   sep = elm_separator_add(win);
-   elm_separator_horizontal_set(sep, EINA_TRUE);
-   WEIGHT(sep, EVAS_HINT_EXPAND, 0);
-   elm_box_pack_end(box, sep);
-   evas_object_show(sep);
-
-   e.sv.fr = elm_frame_add(win);
-   WEIGHT(e.sv.fr, EVAS_HINT_EXPAND, 0);
-   FILL(e.sv.fr);
-   elm_frame_autocollapse_set(e.sv.fr, EINA_TRUE);
-   elm_object_text_set(e.sv.fr, "Info");
-   elm_box_pack_end(box, e.sv.fr);
-   evas_object_show(e.sv.fr);
-
-   box = elm_box_add(win);
-   EXPAND(box);
-   FILL(box);
-   elm_object_content_set(e.sv.fr, box);
-   evas_object_show(box);
-
-   e.sv.desc_lbl = elm_label_add(e.win);
-   WEIGHT(e.sv.desc_lbl, EVAS_HINT_EXPAND, 0);
-   ALIGN(e.sv.desc_lbl, EVAS_HINT_FILL, 0.5);
-   elm_label_line_wrap_set(e.sv.desc_lbl, ELM_WRAP_WORD);
-   elm_box_pack_end(box, e.sv.desc_lbl);
-   evas_object_show(e.sv.desc_lbl);
-
-   e.sv.hbox = elm_box_add(win);
-   WEIGHT(e.sv.hbox, EVAS_HINT_EXPAND, 0);
-   FILL(e.sv.hbox);
-   elm_box_horizontal_set(e.sv.hbox, EINA_TRUE);
-   elm_box_pack_end(box, e.sv.hbox);
-   evas_object_show(e.sv.hbox);
-
-   e.sv.auth_lbl = elm_label_add(e.win);
-   WEIGHT(e.sv.auth_lbl, EVAS_HINT_EXPAND, 0);
-   ALIGN(e.sv.auth_lbl, 0, 0.5);
-   elm_box_pack_end(e.sv.hbox, e.sv.auth_lbl);
-   evas_object_show(e.sv.auth_lbl);
-
-   e.sv.art_lbl = elm_label_add(e.win);
-   WEIGHT(e.sv.art_lbl, EVAS_HINT_EXPAND, 0);
-   ALIGN(e.sv.art_lbl, 1, 0.5);
-   elm_box_pack_end(e.sv.hbox, e.sv.art_lbl);
-   evas_object_show(e.sv.art_lbl);
-
-   e.sv.hbox2 = elm_box_add(win);
-   WEIGHT(e.sv.hbox2, EVAS_HINT_EXPAND, 0);
-   FILL(e.sv.hbox2);
-   elm_box_horizontal_set(e.sv.hbox2, EINA_TRUE);
-   elm_box_pack_end(box, e.sv.hbox2);
-   evas_object_show(e.sv.hbox2);
-
-   e.sv.chap_lbl = elm_label_add(e.win);
-   WEIGHT(e.sv.chap_lbl, EVAS_HINT_EXPAND, 0);
-   ALIGN(e.sv.chap_lbl, 0, 0.5);
-   elm_box_pack_end(e.sv.hbox2, e.sv.chap_lbl);
-   evas_object_show(e.sv.chap_lbl);
-
-   e.sv.year_lbl = elm_label_add(e.win);
-   WEIGHT(e.sv.year_lbl, EVAS_HINT_EXPAND, 0);
-   ALIGN(e.sv.year_lbl, 1, 0.5);
-   elm_box_pack_end(e.sv.hbox2, e.sv.year_lbl);
-   evas_object_show(e.sv.year_lbl);
-
-   sep = elm_separator_add(win);
-   elm_separator_horizontal_set(sep, EINA_TRUE);
-   WEIGHT(sep, EVAS_HINT_EXPAND, 0);
-   elm_box_pack_end(e.sv.box, sep);
-   evas_object_show(sep);
-
-   e.sv.itc.item_style     = "default";
-   e.sv.itc.func.text_get = (Elm_Genlist_Item_Text_Get_Cb)series_view_list_text_cb;
-   e.sv.itc.func.content_get  = NULL;
-   e.sv.itc.func.state_get = NULL;
-   e.sv.itc.func.del       = NULL;
-   e.sv.itc.version = ELM_GENLIST_ITEM_CLASS_VERSION;
-   e.sv.list = list = elm_genlist_add(e.win);
-   EXPAND(list);
-   FILL(list);
-   elm_genlist_compress_mode_set(list, EINA_TRUE);
-   elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
-   series_view_list_init(&e, list);
-   elm_box_pack_end(e.sv.box, list);
-   evas_object_show(list);
-
-   e.sw.itc.item_style     = "double_label";
-   e.sw.itc.func.text_get = (Elm_Genlist_Item_Text_Get_Cb)search_list_text_cb;
-   e.sw.itc.func.content_get  = (Elm_Genlist_Item_Content_Get_Cb)search_list_pic_cb;
-   e.sw.itc.func.state_get = NULL;
-   e.sw.itc.func.del       = NULL;
-   e.sw.list = list = elm_genlist_add(e.win);
-   e.sw.itc.version = ELM_GENLIST_ITEM_CLASS_VERSION;
-   EXPAND(list);
-   FILL(list);
-   elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
-   e.sw.nf_it = elm_naviframe_item_simple_push(e.nf, list);
-   search_name_list_init(&e, list);
-   evas_object_show(list);
-
-   elm_object_focus_set(entry, EINA_TRUE);
+   series_view_create(&e, win);
+   search_view_create(&e, win);
+   update_view_create(&e, win);
+   e.sw.itc.item_style = "double_label";
 
    ecore_event_handler_add(ECORE_CON_EVENT_URL_PROGRESS, (Ecore_Event_Handler_Cb)_url_progress, NULL);
    ecore_event_handler_add(ECORE_CON_EVENT_URL_DATA, (Ecore_Event_Handler_Cb)_url_data, NULL);
@@ -554,12 +398,15 @@ main(int argc, char *argv[])
       1 | evas_object_key_grab(win, "KP_Enter", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
    }
 
+   elm_win_screen_constrain_set(win, EINA_TRUE);
    evas_object_resize(win, 640, 712);
    elm_win_center(win, EINA_TRUE, EINA_TRUE);
 
    e.search_providers = eina_list_append(e.search_providers, mangareader_search_init_cb);
    e.search_providers = eina_list_append(e.search_providers, batoto_search_init_cb);
-   search_view_show(&e, NULL, NULL);
+   e.update_providers = eina_list_append(e.update_providers, mangaupdates_update_init_cb);
+   update_view_show(&e, NULL, NULL);
+   updates_poll(&e);
 
    elm_run();
    elm_shutdown();

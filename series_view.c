@@ -226,7 +226,112 @@ series_view_show(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *event_inf
 }
 
 void
-series_view_list_init(EMG *e, Evas_Object *list)
+series_view_create(EMG *e, Evas_Object *win)
 {
+   Evas_Object *scr, *box, *list, *sep;
+ 
+   e->sv.scr = scr = elm_scroller_add(win);
+   elm_scroller_policy_set(scr, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
+   EXPAND(scr);
+   FILL(scr);
+   e->sv.nf_it = elm_naviframe_item_simple_push(e->nf, scr);
+   evas_object_show(scr);
+
+   e->sv.box = box = elm_box_add(win);
+   EXPAND(box);
+   FILL(box);
+   elm_object_content_set(scr, box);
+   evas_object_show(box);
+
+   e->sv.title_lbl = elm_label_add(e->win);
+   WEIGHT(e->sv.title_lbl, EVAS_HINT_EXPAND, 0);
+   elm_box_pack_end(box, e->sv.title_lbl);
+   evas_object_show(e->sv.title_lbl);
+
+   sep = elm_separator_add(win);
+   elm_separator_horizontal_set(sep, EINA_TRUE);
+   WEIGHT(sep, EVAS_HINT_EXPAND, 0);
+   elm_box_pack_end(box, sep);
+   evas_object_show(sep);
+
+   e->sv.fr = elm_frame_add(win);
+   WEIGHT(e->sv.fr, EVAS_HINT_EXPAND, 0);
+   FILL(e->sv.fr);
+   elm_frame_autocollapse_set(e->sv.fr, EINA_TRUE);
+   elm_object_text_set(e->sv.fr, "Info");
+   elm_box_pack_end(box, e->sv.fr);
+   evas_object_show(e->sv.fr);
+
+   box = elm_box_add(win);
+   EXPAND(box);
+   FILL(box);
+   elm_object_content_set(e->sv.fr, box);
+   evas_object_show(box);
+
+   /* FIXME: scroller and table here */
+   e->sv.desc_lbl = elm_label_add(e->win);
+   WEIGHT(e->sv.desc_lbl, EVAS_HINT_EXPAND, 0);
+   ALIGN(e->sv.desc_lbl, EVAS_HINT_FILL, 0.5);
+   elm_label_line_wrap_set(e->sv.desc_lbl, ELM_WRAP_WORD);
+   elm_box_pack_end(box, e->sv.desc_lbl);
+   evas_object_show(e->sv.desc_lbl);
+
+   e->sv.hbox = elm_box_add(win);
+   WEIGHT(e->sv.hbox, EVAS_HINT_EXPAND, 0);
+   FILL(e->sv.hbox);
+   elm_box_horizontal_set(e->sv.hbox, EINA_TRUE);
+   elm_box_pack_end(box, e->sv.hbox);
+   evas_object_show(e->sv.hbox);
+
+   e->sv.auth_lbl = elm_label_add(e->win);
+   WEIGHT(e->sv.auth_lbl, EVAS_HINT_EXPAND, 0);
+   ALIGN(e->sv.auth_lbl, 0, 0.5);
+   elm_box_pack_end(e->sv.hbox, e->sv.auth_lbl);
+   evas_object_show(e->sv.auth_lbl);
+
+   e->sv.art_lbl = elm_label_add(e->win);
+   WEIGHT(e->sv.art_lbl, EVAS_HINT_EXPAND, 0);
+   ALIGN(e->sv.art_lbl, 1, 0.5);
+   elm_box_pack_end(e->sv.hbox, e->sv.art_lbl);
+   evas_object_show(e->sv.art_lbl);
+
+   e->sv.hbox2 = elm_box_add(win);
+   WEIGHT(e->sv.hbox2, EVAS_HINT_EXPAND, 0);
+   FILL(e->sv.hbox2);
+   elm_box_horizontal_set(e->sv.hbox2, EINA_TRUE);
+   elm_box_pack_end(box, e->sv.hbox2);
+   evas_object_show(e->sv.hbox2);
+
+   e->sv.chap_lbl = elm_label_add(e->win);
+   WEIGHT(e->sv.chap_lbl, EVAS_HINT_EXPAND, 0);
+   ALIGN(e->sv.chap_lbl, 0, 0.5);
+   elm_box_pack_end(e->sv.hbox2, e->sv.chap_lbl);
+   evas_object_show(e->sv.chap_lbl);
+
+   e->sv.year_lbl = elm_label_add(e->win);
+   WEIGHT(e->sv.year_lbl, EVAS_HINT_EXPAND, 0);
+   ALIGN(e->sv.year_lbl, 1, 0.5);
+   elm_box_pack_end(e->sv.hbox2, e->sv.year_lbl);
+   evas_object_show(e->sv.year_lbl);
+
+   sep = elm_separator_add(win);
+   elm_separator_horizontal_set(sep, EINA_TRUE);
+   WEIGHT(sep, EVAS_HINT_EXPAND, 0);
+   elm_box_pack_end(e->sv.box, sep);
+   evas_object_show(sep);
+
+   e->sv.itc.item_style     = NULL;
+   e->sv.itc.func.text_get = (Elm_Genlist_Item_Text_Get_Cb)series_view_list_text_cb;
+   e->sv.itc.func.content_get  = NULL;
+   e->sv.itc.func.state_get = NULL;
+   e->sv.itc.func.del       = NULL;
+   e->sv.itc.version = ELM_GENLIST_ITEM_CLASS_VERSION;
+   e->sv.list = list = elm_genlist_add(e->win);
+   EXPAND(list);
+   FILL(list);
+   elm_genlist_compress_mode_set(list, EINA_TRUE);
+   elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
    evas_object_smart_callback_add(list, "activated", (Evas_Smart_Cb)_series_view_pick_cb, e);
+   elm_box_pack_end(e->sv.box, list);
+   evas_object_show(list);
 }

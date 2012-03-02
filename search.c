@@ -41,6 +41,7 @@ search_view_show(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *event_inf
         evas_object_key_ungrab(e->win, "Left", 0, ctrl | shift | alt);
      }
    e->view = EMG_VIEW_SEARCH;
+   elm_object_focus_set(e->sw.entry, EINA_TRUE);
 }
 
 void
@@ -202,4 +203,69 @@ search_list_pic_cb(Search_Result_Item *sri, Evas_Object *obj, const char *part)
    elm_icon_memfile_set(ic, eina_binbuf_string_get(sri->image->buf), eina_binbuf_length_get(sri->image->buf), NULL, NULL);
    evas_object_show(ic);
    return ic;
+}
+
+void
+search_view_create(EMG *e, Evas_Object *win)
+{
+   Evas_Object *box, *progress, *entry, *list;
+
+   box = elm_box_add(win);
+   EXPAND(box);
+   FILL(box);
+   e->sw.nf_it = elm_naviframe_item_simple_push(e->nf, box);
+   evas_object_show(box);
+
+   e->sw.fr = elm_frame_add(win);
+   WEIGHT(e->sw.fr, EVAS_HINT_EXPAND, 0);
+   FILL(e->sw.fr);
+   elm_box_pack_end(box, e->sw.fr);
+   elm_object_text_set(e->sw.fr, "Search");
+   elm_frame_autocollapse_set(e->sw.fr, EINA_TRUE);
+
+   e->sw.box = elm_box_add(win);
+   EXPAND(e->sw.box);
+   FILL(e->sw.box);
+   elm_box_horizontal_set(e->sw.box, EINA_TRUE);
+   elm_object_content_set(e->sw.fr, e->sw.box);
+   evas_object_show(e->sw.box);
+
+   e->sw.progress = progress = elm_progressbar_add(e->win);
+   WEIGHT(progress, EVAS_HINT_EXPAND, 0.0);
+   FILL(progress);
+   elm_box_pack_end(e->sw.box, progress);
+   elm_progressbar_value_set(progress, 0.0);
+   elm_progressbar_horizontal_set(progress, EINA_TRUE);
+   evas_object_show(progress);
+
+   e->sw.entry = entry = elm_entry_add(win);
+   WEIGHT(entry, 0.5, EVAS_HINT_EXPAND);
+   ALIGN(entry, EVAS_HINT_FILL, 0.5);
+   elm_entry_scrollable_set(entry, EINA_TRUE);
+   elm_entry_single_line_set(entry, EINA_TRUE);
+   elm_entry_cnp_textonly_set(entry, EINA_TRUE);
+   elm_entry_scrollbar_policy_set(entry, ELM_SCROLLER_POLICY_AUTO, ELM_SCROLLER_POLICY_OFF);
+   elm_entry_cursor_end_set(entry);
+   /* TEMP */
+   elm_entry_entry_set(entry, "tower of god");
+
+   elm_entry_select_all(entry);
+
+   elm_box_pack_end(e->sw.box, entry);
+   evas_object_show(entry);
+   evas_object_smart_callback_add(entry, "activated", (Evas_Smart_Cb)search_name_create, &e);
+   evas_object_show(e->sw.fr);
+
+   e->sw.itc.func.text_get = (Elm_Genlist_Item_Text_Get_Cb)search_list_text_cb;
+   e->sw.itc.func.content_get  = (Elm_Genlist_Item_Content_Get_Cb)search_list_pic_cb;
+   e->sw.itc.func.state_get = NULL;
+   e->sw.itc.func.del       = NULL;
+   e->sw.list = list = elm_genlist_add(win);
+   e->sw.itc.version = ELM_GENLIST_ITEM_CLASS_VERSION;
+   EXPAND(list);
+   FILL(list);
+   elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
+   elm_box_pack_end(box, list);
+   search_name_list_init(e, list);
+   evas_object_show(list);
 }

@@ -173,3 +173,34 @@ comic_view_page_next(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNU
    comic_view_page_set(e, cp);
 }
 
+
+void
+comic_view_create(EMG *e, Evas_Object *win)
+{
+   Evas_Object *ic;
+   e->cv.nf = elm_naviframe_add(win);
+   EXPAND(e->cv.nf);
+   FILL(e->cv.nf);
+   e->cv.nf_it = elm_naviframe_item_simple_push(e->nf, e->cv.nf);
+   evas_object_show(e->cv.nf);
+
+   e->cv.prev = elm_button_add(win);
+   evas_object_ref(e->cv.prev);
+   FILL(e->cv.prev);
+   ic = elm_icon_add(win);
+   FILL(ic);
+   elm_icon_standard_set(ic, "go-previous");
+   evas_object_show(ic);
+   elm_object_part_content_set(e->cv.prev, "icon", ic);
+   evas_object_smart_callback_add(e->cv.prev, "clicked", (Evas_Smart_Cb)comic_view_page_prev, &e);
+
+   e->cv.next = elm_button_add(win);
+   evas_object_ref(e->cv.next);
+   FILL(e->cv.next);
+   ic = elm_icon_add(win);
+   FILL(ic);
+   elm_icon_standard_set(ic, "go-next");
+   evas_object_show(ic);
+   elm_object_part_content_set(e->cv.next, "icon", ic);
+   evas_object_smart_callback_add(e->cv.next, "clicked", (Evas_Smart_Cb)comic_view_page_next, &e);
+}

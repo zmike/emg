@@ -33,6 +33,7 @@ extern int _emg_log_dom;
 #define IDENTIFIER_SEARCH_NAME 11
 #define IDENTIFIER_SEARCH_IMAGE 10
 
+#define IDENTIFIER_UPDATE 5
 
 
 #define DEFAULT_PAGE_READAHEAD 5
@@ -47,6 +48,9 @@ typedef struct Comic_Provider Comic_Provider;
 typedef struct Search_Result_Item Search_Result_Item;
 typedef struct Comic_Series_Data Comic_Series_Data;
 typedef struct Comic_Chapter_Item Comic_Chapter_Item;
+typedef struct Update Update;
+typedef struct Update_Result Update_Result;
+typedef struct Update_Result_Item Update_Result_Item;
 
 typedef void (*Provider_Data_Cb)(void *);
 typedef Comic_Provider *(*Provider_Init_Cb)(void);
@@ -54,6 +58,7 @@ typedef Comic_Provider *(*Provider_Init_Cb)(void);
 
 typedef enum EMG_View
 {
+   EMG_VIEW_UPDATES,
    EMG_VIEW_SEARCH,
    EMG_VIEW_SERIES,
    EMG_VIEW_READER
@@ -106,11 +111,27 @@ typedef struct Series_View
    Elm_Genlist_Item_Class itc;
 } Series_View;
 
+typedef struct Update_View
+{
+   Elm_Object_Item *nf_it;
+   Elm_Object_Item *tb_it;
+   Evas_Object *box;
+   Evas_Object *tb;
+   Evas_Object *nf;
+   Evas_Object *list[2];
+   Elm_Object_Item *uv_nf_it[2];
+   Elm_Object_Item *uv_tb_it[2];
+   Elm_Genlist_Item_Class itc;
+   Eina_List *updates;
+   Eina_List *results;
+} Update_View;
+
 typedef struct EMG
 {
    Search_Window sw;
    Comic_View cv;
    Series_View sv;
+   Update_View uv;
    Evas_Object *win;
    Evas_Object *box;
    Evas_Object *hbox;
@@ -118,6 +139,7 @@ typedef struct EMG
    Evas_Object *nf;
    Eina_List *series;
    Eina_List *search_providers;
+   Eina_List *update_providers;
    EMG_View view;
 } EMG;
 
@@ -133,6 +155,42 @@ struct Comic_Provider
    char *replace_str; /* string to replace ' ' with */
    Provider_Data_Cb data_cb; /* parser cb */
    Provider_Init_Cb init_cb; /* init cb for subclass */
+};
+
+struct Update
+{
+   unsigned int identifier;
+   EMG *e;
+   Ecore_Con_Url *ecu;
+   Eina_Strbuf *buf;
+   Eina_Inlist *results;
+   unsigned int result_count;
+   Comic_Provider *provider;
+   Eina_Bool done : 1;
+};
+
+struct Update_Result
+{
+   EMG *e;
+   Update_Result_Item *uri;
+   const char *name;
+   unsigned int namelen;
+   const char *group_name;
+   const char *href;
+   char *vol;
+   double number;
+   Comic_Provider *provider;
+};
+
+struct Update_Result_Item
+{
+   Elm_Object_Item *it; /* list item */
+   Update_Result *ur; /* currently used result */
+   const char *name;
+   unsigned int namelen;
+   const char *href;
+   const char *group_name;
+   Eina_List *results;
 };
 
 /* a user search by name */
@@ -287,6 +345,7 @@ void search_name_create(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __
 void search_view_count_update(Search_Name *sn);
 void search_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
 void search_result_pick(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *it);
+void search_view_create(EMG *e, Evas_Object *win);
 
 void search_result_item_result_add(Search_Result *sr);
 void search_result_item_result_del(Search_Result *sr);
@@ -304,6 +363,7 @@ void comic_view_chapter_set(EMG *e, Comic_Chapter_Item *cci);
 void comic_view_show(EMG *e, Evas_Object *obj, Elm_Object_Item *event_info);
 void comic_view_page_prev(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__);
 void comic_view_page_next(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__);
+void comic_view_create(EMG *e, Evas_Object *win);
 
 void series_view_populate(Comic_Series *cs);
 void series_view_clear(EMG *e);
@@ -316,7 +376,7 @@ void series_view_year_set(EMG *e, Comic_Series *cs);
 void series_view_title_set(EMG *e, Comic_Series *cs);
 void series_view_desc_set(EMG *e, Comic_Series *cs);
 void series_view_image_set(EMG *e, Eina_Binbuf *buf);
-void series_view_list_init(EMG *e, Evas_Object *list);
+void series_view_create(EMG *e, Evas_Object *win);
 
 Comic_Series *comic_series_find(EMG *e, const char *name);
 Comic_Series *comic_series_new(Search_Result_Item *sri);
@@ -354,8 +414,20 @@ Comic_Page *comic_page_prev_get(Comic_Page *cp);
 Comic_Page *comic_page_next_get(Comic_Page *cp);
 Eina_Bool comic_page_current(Comic_Page *cp);
 
+void update_view_create(EMG *e, Evas_Object *win);
+Update *update_new(EMG *e);
+Update_Result *update_result_add(Update *u);
+void updates_poll(EMG *e);
+void update_view_show(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *event_info);
+void update_parser(Update *u);
+
+void update_result_item_result_add(Update_Result *ur);
+void update_result_item_result_del(Update_Result *ur);
+void update_result_item_update(Update_Result *ur);
+
 Comic_Provider *batoto_search_init_cb(void);
 Comic_Provider *mangareader_search_init_cb(void);
+Comic_Provider *mangaupdates_update_init_cb(void);
 
 const char *util_markup_to_utf8(const char *start, const char *p);
 #endif
