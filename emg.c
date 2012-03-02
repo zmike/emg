@@ -121,6 +121,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 {
    unsigned int *identifier;
 
+   DBG("transfer completed: %d", ev->status);
    identifier = ecore_con_url_data_get(ev->url_con);
    switch (*identifier)
      {
@@ -207,7 +208,7 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            sn->done = EINA_TRUE;
            if (!(--sn->e->sw.running))
              elm_object_disabled_set(sn->e->sw.entry, EINA_FALSE);
-           eina_strbuf_free(sn->buf);
+           if (sn->buf) eina_strbuf_free(sn->buf);
            sn->buf = NULL;
            break;
         }
