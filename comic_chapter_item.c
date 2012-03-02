@@ -22,8 +22,14 @@ _comic_chapter_item_update(Comic_Chapter_Item *cci, Comic_Chapter *cc, Eina_Bool
     cc->cci = cci;
     if (cci->cc && (cci->cc->provider->priority > cc->provider->priority))
       {
-         SET(name);
-         SET(date);
+         if (!cci->name)
+           {
+              SET(name);
+           }
+         if (!cci->date)
+           {
+              SET(date);
+           }
          if (cci->it)
            elm_genlist_item_update(cci->it);
          return;
