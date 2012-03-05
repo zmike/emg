@@ -103,6 +103,17 @@ mangareader_search_name_cb(Search_Name *sn)
              search_view_count_update(sn);
              return;
           }
+        if (!sn->idx[1])
+          {
+             if (!memcmp(data + sn->idx[0], "</div", 5))
+               {
+                  sn->done = EINA_TRUE;
+                  eina_strbuf_free(sn->buf);
+                  sn->buf = NULL;
+                  search_view_count_update(sn);
+                  return;
+               }
+          }
         index_start = data + sn->idx[0] + sn->provider->index_start[sn->idx[1]];
         if (!memcmp(index_start, "adfooter", 8))
           {
