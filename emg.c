@@ -301,6 +301,19 @@ window_key(void *data __UNUSED__, Evas *evas __UNUSED__, Evas_Object *obj __UNUS
 static void
 _win_del(void *data __UNUSED__, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__)
 {
+   if (e.cv.cci)
+     {
+        Elm_Object_Item *it;
+        Eina_List *l;
+
+        l = elm_naviframe_items_get(e.cv.nf);
+
+        EINA_LIST_FREE(l, it)
+          {
+             elm_object_item_part_content_unset(it, "btn_prev");
+             elm_object_item_part_content_unset(it, "btn_next");
+          }
+     }
    evas_object_unref(e.cv.prev);
    evas_object_unref(e.cv.next);
    ecore_main_loop_quit();
