@@ -49,7 +49,7 @@ _comic_chapter_item_new(Comic_Chapter *cc)
 
    cci = calloc(1, sizeof(Comic_Chapter_Item));
    //DBG("new item: cc %g", cc->number);
-   _comic_chapter_item_update(cci, cc, EINA_TRUE);
+   _comic_chapter_item_update(cci, cc, EINA_FALSE);
    cc->csd->chapters = eina_inlist_remove(cc->csd->chapters, EINA_INLIST_GET(cc));
    cc->csd->cs->chapters = eina_inlist_sorted_insert(cc->csd->cs->chapters, EINA_INLIST_GET(cci), (Eina_Compare_Cb)_comic_chapter_item_sort_cb);
    cci->chapters = eina_inlist_append(cci->chapters, EINA_INLIST_GET(cc));

@@ -196,7 +196,7 @@ search_list_pic_cb(Search_Result_Item *sri, Evas_Object *obj, const char *part)
    Evas_Object *ic;
 
    if (strcmp(part, "elm.swallow.end")) return NULL;
-   if (!sri->image->buf) return NULL;
+   if ((!sri->image) || (!sri->image->buf)) return NULL;
    DBG("%s", sri->name);
    ic = elm_icon_add(obj);
    evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);

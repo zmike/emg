@@ -21,6 +21,10 @@ _search_result_item_update(Search_Result_Item *sri, Search_Result *sr, Eina_Bool
               SET(tags);
               SET(tags_len);
            }
+         if (!sri->total)
+           {
+              SET(total);
+           }
          if ((!sri->image) && (sr->image.buf || sr->image.ecu))
            sri->image = &sr->image;
          elm_genlist_item_update(sri->it);
@@ -53,7 +57,7 @@ _search_result_item_new(Search_Result *sr)
    Search_Result_Item *sri;
 
    sri = calloc(1, sizeof(Search_Result_Item));
-   _search_result_item_update(sri, sr, EINA_TRUE);
+   _search_result_item_update(sri, sr, EINA_FALSE);
    sr->e->sw.results = eina_list_append(sr->e->sw.results, sri);
    sri->results = eina_list_append(sri->results, sr);
 }
