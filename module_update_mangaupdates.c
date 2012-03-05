@@ -72,7 +72,7 @@ mangaupdates_data_cb(Update *u)
 
    EINA_LIST_FOREACH((Eina_List*)azy_rss_items_get(rss), l, it)
      {
-        const char *s, *p, *group = NULL;
+        const char *s, *p, *pp, *group = NULL;
         Update_Result *ur;
 
         s = azy_rss_item_title_get(it);
@@ -84,13 +84,16 @@ mangaupdates_data_cb(Update *u)
         else
           p = s;
 
-        p = strchr(p, '.');
-        if (!p) continue; /* nobody cares */
+        for (pp = strchr(p, '.'); pp; pp = strchr(p + 1, '.'))
+          {
+             p = pp;
+             if ((pp[-1] == 'v') || (pp[-1] == 'V') || (pp[-1] == 'c') || (pp[-1] == 'C'))
+               break;
+          }
+        if (!pp) continue; /* nobody cares */
 
         ur = update_result_add(u);
         {
-           const char *pp;
-
            pp = memrchr(s, ' ', p - s);
            while (pp[-1] == ' ') pp--;
            ur->series_namelen = pp - (group ? group + 1 : s);
