@@ -57,7 +57,6 @@ batoto_data_cb(Update *u)
    size_t size;
    Eina_List *l;
 
-   if (!u->done) return;
    size = eina_strbuf_length_get(u->buf);
 
    net = azy_net_buffer_new(eina_strbuf_string_steal(u->buf), size, AZY_NET_TRANSPORT_XML, EINA_TRUE);

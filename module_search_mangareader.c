@@ -265,12 +265,6 @@ mangareader_comic_series_data_cb(Comic_Series_Data *csd)
    const char *data;
    size_t size;
 
-   if (csd->done)
-     {
-        mangareader_comic_series_data_cb2(csd);
-        return;
-     }
-
    data = eina_strbuf_string_get(csd->buf);
    size = eina_strbuf_length_get(csd->buf);
    if ((!csd->idx[0]) && (!csd->idx[1]))
@@ -338,7 +332,7 @@ mangareader_comic_series_data_cb(Comic_Series_Data *csd)
            case 6:
              break;
            default:
-             csd->idx[1]++;
+             mangareader_comic_series_data_cb2(csd);
              return;
           }
         csd->idx[0] = p - data;

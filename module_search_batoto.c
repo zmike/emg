@@ -407,7 +407,7 @@ batoto_comic_series_data_cb(Comic_Series_Data *csd)
              series_view_desc_set(csd->cs->e, csd->cs);
              csd->idx[1]++;
              csd->idx[0] = BATOTO_SERIES_INDEX_JUMP;
-             if (!csd->done) return;
+             csd->done = EINA_TRUE;
              batoto_comic_series_data_cb2(csd);
            default:
              return;

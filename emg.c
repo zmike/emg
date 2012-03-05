@@ -205,7 +205,6 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            elm_object_text_set(sn->e->sw.progress, "Complete");
            elm_progressbar_value_set(sn->e->sw.progress, 100);
            search_name_parser(sn);
-           sn->done = EINA_TRUE;
            if (!(--sn->e->sw.running))
              elm_object_disabled_set(sn->e->sw.entry, EINA_FALSE);
            if (sn->buf) eina_strbuf_free(sn->buf);
@@ -218,7 +217,6 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
 
            u = ecore_con_url_data_get(ev->url_con);
            u->ecu = NULL;
-           u->done = EINA_TRUE;
            update_parser(u);
            eina_strbuf_free(u->buf);
            u->buf = NULL;
@@ -229,7 +227,6 @@ _url_complete(void *data __UNUSED__, int type __UNUSED__, Ecore_Con_Event_Url_Co
            Comic_Series_Data *csd;
 
            csd = ecore_con_url_data_get(ev->url_con);
-           csd->done = EINA_TRUE;
            csd->ecu = NULL;
            comic_series_parser(csd);
            eina_strbuf_free(csd->buf);
