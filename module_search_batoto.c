@@ -209,7 +209,11 @@ batoto_comic_series_data_cb2(Comic_Series_Data *csd)
                     }
                }
              else
-               decimal = EINA_TRUE;
+               {
+                  BUFCHR(' ');
+                  number = ccp->number - 0.5;
+                  decimal = EINA_TRUE;
+               }
           }
         if (!cc)
           {
