@@ -211,7 +211,7 @@ batoto_comic_series_data_cb2(Comic_Series_Data *csd)
              else
                {
                   BUFCHR(' ');
-                  number = ccp->number - 0.5;
+                  number = ccp->number - 0.1;
                   decimal = EINA_TRUE;
                }
           }
