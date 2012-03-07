@@ -81,7 +81,7 @@ update_view_create(EMG *e, Evas_Object *win)
         e->uv.list[x] = list = elm_genlist_add(win);
         EXPAND(list);
         FILL(list);
-        elm_genlist_compress_mode_set(list, EINA_TRUE);
+        elm_genlist_mode_set(list, ELM_LIST_COMPRESS);
         elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
         evas_object_smart_callback_add(list, "activated", cb[x], e);
         e->uv.uv_nf_it[x] = elm_naviframe_item_simple_push(e->uv.nf, list);

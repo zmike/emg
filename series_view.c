@@ -329,7 +329,7 @@ series_view_create(EMG *e, Evas_Object *win)
    e->sv.list = list = elm_genlist_add(e->win);
    EXPAND(list);
    FILL(list);
-   elm_genlist_compress_mode_set(list, EINA_TRUE);
+   elm_genlist_mode_set(list, ELM_LIST_COMPRESS);
    elm_genlist_scroller_policy_set(list, ELM_SCROLLER_POLICY_OFF, ELM_SCROLLER_POLICY_AUTO);
    evas_object_smart_callback_add(list, "activated", (Evas_Smart_Cb)_series_view_pick_cb, e);
    elm_box_pack_end(e->sv.box, list);
