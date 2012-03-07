@@ -331,6 +331,7 @@ main(int argc, char *argv[])
    elm_config_scroll_bounce_enabled_set(EINA_FALSE);
    _emg_log_dom = eina_log_domain_register("emg", EINA_COLOR_HIGH EINA_COLOR_CYAN);
    eina_log_domain_level_set("emg", EINA_LOG_LEVEL_DBG);
+   eina_log_abort_on_critical_set(EINA_TRUE);
 
    /* image win */
    e.win = win = elm_win_add(NULL, NULL, ELM_WIN_BASIC);
