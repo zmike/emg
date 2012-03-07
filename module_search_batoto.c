@@ -94,9 +94,13 @@ batoto_search_name_cb(Search_Name *sn)
         index_start = data + sn->idx[0] + sn->provider->index_start[sn->idx[1]];
         if ((!sn->idx[1]) && memcmp(index_start, "http", 4))
           {
-             sn->done = EINA_TRUE;
-             search_view_count_update(sn);
-             return;
+             index_start += 4;
+             if (memcmp(index_start, "http", 4))
+               {
+                  sn->done = EINA_TRUE;
+                  search_view_count_update(sn);
+                  return;
+               }
           }
         if ((sn->idx[1] == 1) && (!memcmp(index_start, "s\"/> ", 5)))
           /* ongoing series */
