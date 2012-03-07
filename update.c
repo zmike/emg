@@ -57,7 +57,7 @@ update_view_create(EMG *e, Evas_Object *win)
    WEIGHT(e->uv.tb, EVAS_HINT_EXPAND, 0);
    FILL(e->uv.tb);
    elm_object_style_set(e->uv.tb, "item_horizontal");
-   elm_toolbar_select_mode_set(e->uv.tb, ELM_OBJECT_ALWAYS_SELECT);
+   elm_toolbar_select_mode_set(e->uv.tb, ELM_OBJECT_SELECT_MODE_ALWAYS);
    elm_box_pack_end(box, e->uv.tb);
    evas_object_show(e->uv.tb);
 

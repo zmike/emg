@@ -365,7 +365,7 @@ main(int argc, char *argv[])
    elm_toolbar_horizontal_set(e.tb, EINA_FALSE);
    elm_toolbar_homogeneous_set(e.tb, EINA_TRUE);
    elm_toolbar_icon_order_lookup_set(e.tb, ELM_ICON_LOOKUP_FDO);
-   elm_toolbar_always_select_mode_set(e.tb, EINA_TRUE);
+   elm_toolbar_select_mode_set(e.tb, ELM_OBJECT_SELECT_MODE_ALWAYS);
    {
       e.uv.tb_it = elm_toolbar_item_append(e.tb, NULL, "Recently Updated", (Evas_Smart_Cb)update_view_show, &e);
       e.sw.tb_it = elm_toolbar_item_append(e.tb, "system-search", "Search Results", (Evas_Smart_Cb)search_view_show, &e);
