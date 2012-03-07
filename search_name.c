@@ -9,7 +9,7 @@ _search_name_tooltip_cb(Search_Result_Item *sri, Evas_Object *obj __UNUSED__, Ev
    ic = elm_icon_add(tt);
    evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
    elm_icon_memfile_set(ic, eina_binbuf_string_get(sri->image->buf), eina_binbuf_length_get(sri->image->buf), NULL, NULL);
-   elm_icon_scale_set(ic, 0, 0);
+   elm_icon_resizable_set(ic, 0, 0);
    elm_icon_aspect_fixed_set(ic, EINA_TRUE);
    elm_icon_fill_outside_set(ic, EINA_FALSE);
    evas_object_show(ic);

@@ -107,7 +107,7 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
    EXPAND(cp->obj);
    ALIGN(cp->obj, 0.5, 0);
    elm_icon_animated_set(cp->obj, EINA_TRUE);
-   elm_icon_scale_set(cp->obj, 0, 0);
+   elm_icon_resizable_set(cp->obj, 0, 0);
    elm_icon_aspect_fixed_set(cp->obj, EINA_TRUE);
    elm_icon_fill_outside_set(cp->obj, EINA_FALSE);
    comic_view_image_update(cp);

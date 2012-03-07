@@ -328,7 +328,7 @@ main(int argc, char *argv[])
    ecore_con_url_init();
    elm_init(argc, argv);
    elm_policy_set(ELM_POLICY_QUIT, ELM_POLICY_QUIT_LAST_WINDOW_CLOSED);
-   elm_scroll_bounce_enabled_set(EINA_FALSE);
+   elm_config_scroll_bounce_enabled_set(EINA_FALSE);
    _emg_log_dom = eina_log_domain_register("emg", EINA_COLOR_HIGH EINA_COLOR_CYAN);
    eina_log_domain_level_set("emg", EINA_LOG_LEVEL_DBG);
 

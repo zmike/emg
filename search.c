@@ -243,7 +243,7 @@ search_view_create(EMG *e, Evas_Object *win)
    ALIGN(entry, EVAS_HINT_FILL, 0.5);
    elm_entry_scrollable_set(entry, EINA_TRUE);
    elm_entry_single_line_set(entry, EINA_TRUE);
-   elm_entry_cnp_textonly_set(entry, EINA_TRUE);
+   elm_entry_cnp_mode_set(entry, ELM_CNP_MODE_PLAINTEXT);
    elm_entry_scrollbar_policy_set(entry, ELM_SCROLLER_POLICY_AUTO, ELM_SCROLLER_POLICY_OFF);
    elm_entry_cursor_end_set(entry);
    /* TEMP */
