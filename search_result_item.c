@@ -70,7 +70,35 @@ search_result_item_result_add(Search_Result *sr)
 
    EINA_LIST_FOREACH(sr->e->sw.results, l, sri)
      {
-        if (strcasecmp(sr->name, sri->name)) continue;
+        if (sr->provider == sri->sr->provider)
+          {
+             /* same provider: "different" named results impossible */
+             if (sr->namelen != sri->namelen) continue;
+             if (strcasecmp(sr->name, sri->name)) continue;
+          }
+        else
+          {
+             /* different provider: potentially slightly different names - try other things */
+             if (sr->namelen == sri->namelen)
+               {
+                  if (strcasecmp(sr->name, sri->name)) continue;
+               }
+             else
+               {
+                  if (sri->total && sr->total)
+                    {
+                       if (abs((long long)sri->total - (long long)sr->total) > 5) /* close enough */
+                         continue;
+                       if (strncasecmp(sr->name, sri->name, MIN(sr->namelen, sri->namelen))) continue;
+                    }
+                  else
+                    {
+                       /* FIXME: this needs to be better */
+                       if (sr->namelen != sri->namelen) continue;
+                       if (strcasecmp(sr->name, sri->name)) continue;
+                    }
+               }
+          }
         _search_result_item_update(sri, sr, EINA_FALSE);
 
         if (sri->sr == sr)

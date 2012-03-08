@@ -17,6 +17,10 @@
 
 extern int _emg_log_dom;
 
+#ifndef MIN
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+
 #define BREAK raise(SIGINT)
 
 #define WEIGHT evas_object_size_hint_weight_set
