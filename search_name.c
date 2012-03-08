@@ -5,7 +5,7 @@ _search_name_tooltip_cb(Search_Result_Item *sri, Evas_Object *obj __UNUSED__, Ev
 {
    Evas_Object *ic;
 
-   if (!sri->image->buf) return NULL;
+   if ((!sri->image) || (!sri->image->buf)) return NULL;
    ic = elm_icon_add(tt);
    evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
    elm_icon_memfile_set(ic, eina_binbuf_string_get(sri->image->buf), eina_binbuf_length_get(sri->image->buf), NULL, NULL);
