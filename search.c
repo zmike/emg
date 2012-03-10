@@ -163,6 +163,8 @@ search_list_text_cb(Search_Result_Item *sri, Evas_Object *obj __UNUSED__, const 
         char *buf;
         size_t size;
 
+        if (!sri->total) return strdup(sri->name);
+
         size = sizeof(char) * (sri->namelen + sizeof(" ( chapters)") + 16);
         buf = malloc(size);
 
