@@ -60,6 +60,20 @@ comic_view_image_update(Comic_Page *cp)
      abort();
 }
 
+static void
+comic_view_image_create(Comic_Page *cp)
+{
+   EMG *e = cp->cc->csd->cs->e;
+   cp->obj = elm_icon_add(e->win);
+   EXPAND(cp->obj);
+   ALIGN(cp->obj, 0.5, 0);
+   elm_icon_animated_set(cp->obj, EINA_TRUE);
+   elm_icon_resizable_set(cp->obj, 0, 0);
+   elm_icon_aspect_fixed_set(cp->obj, EINA_TRUE);
+   elm_icon_fill_outside_set(cp->obj, EINA_FALSE);
+   comic_view_image_update(cp);
+}
+
 void
 comic_view_page_set(EMG *e, Comic_Page *cp)
 {
@@ -103,14 +117,7 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
    cp->scr = elm_scroller_add(e->win);
    EXPAND(cp->scr);
    FILL(cp->scr);
-   cp->obj = elm_icon_add(e->win);
-   EXPAND(cp->obj);
-   ALIGN(cp->obj, 0.5, 0);
-   elm_icon_animated_set(cp->obj, EINA_TRUE);
-   elm_icon_resizable_set(cp->obj, 0, 0);
-   elm_icon_aspect_fixed_set(cp->obj, EINA_TRUE);
-   elm_icon_fill_outside_set(cp->obj, EINA_FALSE);
-   comic_view_image_update(cp);
+   if (!cp->obj) comic_view_image_create(cp);
    elm_object_content_set(cp->scr, cp->obj);
    evas_object_show(cp->scr);
 
@@ -128,6 +135,7 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
    cp->nf_it = elm_naviframe_item_push(e->cv.nf, buf, prev, next, cp->scr, NULL);
    elm_object_focus_set(e->cv.next, EINA_TRUE);
    evas_object_show(cp->obj);
+   if (cpn) ecore_job_add((Ecore_Cb)comic_view_image_create, cpn);
 }
 
 void
