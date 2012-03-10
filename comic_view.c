@@ -64,6 +64,7 @@ static void
 comic_view_image_create(Comic_Page *cp)
 {
    EMG *e = cp->cc->csd->cs->e;
+   if (cp->obj) return;
    cp->obj = elm_icon_add(e->win);
    EXPAND(cp->obj);
    ALIGN(cp->obj, 0.5, 0);
