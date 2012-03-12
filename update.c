@@ -46,6 +46,7 @@ update_view_create(EMG *e, Evas_Object *win)
    Evas_Object *box, *list;
    int x;
    Evas_Smart_Cb cb[2];
+   const char *str[] = { "General", "Personal" };
 
    e->uv.box = box = elm_box_add(win);
    EXPAND(box);
@@ -86,9 +87,8 @@ update_view_create(EMG *e, Evas_Object *win)
         evas_object_smart_callback_add(list, "activated", cb[x], e);
         e->uv.uv_nf_it[x] = elm_naviframe_item_simple_push(e->uv.nf, list);
         evas_object_show(list);
+        e->uv.uv_tb_it[x] = elm_toolbar_item_prepend(e->uv.tb, NULL, str[x], (Evas_Smart_Cb)update_view_list_select, e->uv.uv_nf_it[x]);
      }
-   e->uv.uv_tb_it[0] = elm_toolbar_item_append(e->uv.tb, NULL, "General", (Evas_Smart_Cb)update_view_list_select, e->uv.uv_nf_it[0]);
-   e->uv.uv_tb_it[1] = elm_toolbar_item_append(e->uv.tb, NULL, "Personal", (Evas_Smart_Cb)update_view_list_select, e->uv.uv_nf_it[1]);
    elm_toolbar_item_selected_set(e->uv.uv_tb_it[0], EINA_TRUE);
 }
 
