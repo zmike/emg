@@ -461,7 +461,7 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
                           /* no more chapters available in this direction, shouldn't get here */
                           break;
                        }
-                     cn = comic_page_new(cc, pnum);
+                     cn = comic_page_new(cc, pnum ?: 1);
                   }
                 {
                    char *buf;
