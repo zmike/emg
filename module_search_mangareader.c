@@ -435,9 +435,27 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
                      Comic_Chapter *cc;
 
                      if (cp->idx[1] == 2)
-                       cc = comic_chapter_next_get(cp->cc);
+                       {
+                          cc = comic_chapter_next_get(cp->cc);
+                          if (!cc)
+                            {
+                               Comic_Chapter_Item *cci;
+
+                               cci = comic_chapter_item_next_get(cp->cc->cci);
+                               if (cci) cc = comic_chapter_item_match(cci, cp->cc->provider);
+                            }
+                       }
                      else
-                       cc = comic_chapter_prev_get(cp->cc);
+                       {
+                          cc = comic_chapter_prev_get(cp->cc);
+                          if (!cc)
+                            {
+                               Comic_Chapter_Item *cci;
+
+                               cci = comic_chapter_item_prev_get(cp->cc->cci);
+                               if (cci) cc = comic_chapter_item_match(cci, cp->cc->provider);
+                            }
+                       }
                      if (!cc)
                        {
                           /* no more chapters available in this direction, shouldn't get here */

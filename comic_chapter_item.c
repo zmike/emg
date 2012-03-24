@@ -147,3 +147,14 @@ comic_chapter_item_next_get(Comic_Chapter_Item *cci)
    if (!EINA_INLIST_GET(cci)->next) return NULL;
    return EINA_INLIST_CONTAINER_GET(EINA_INLIST_GET(cci)->next, Comic_Chapter_Item);
 }
+
+Comic_Chapter *
+comic_chapter_item_match(Comic_Chapter_Item *cci, Comic_Provider *cpr)
+{
+   Comic_Chapter *cc;
+   for (cc = cci->cc; cc; cc = comic_chapter_next_get(cc))
+     {
+        if (cc->provider == cpr) return cc;
+     }
+   return NULL;
+}

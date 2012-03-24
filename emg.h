@@ -412,6 +412,7 @@ void comic_chapter_item_chapter_del(Comic_Chapter *cc);
 void comic_chapter_item_update(Comic_Chapter *cc);
 Comic_Chapter_Item *comic_chapter_item_prev_get(Comic_Chapter_Item *cci);
 Comic_Chapter_Item *comic_chapter_item_next_get(Comic_Chapter_Item *cci);
+Comic_Chapter *comic_chapter_item_match(Comic_Chapter_Item *cci, Comic_Provider *cpr);
 
 void comic_page_image_del(Comic_Page *cp);
 void comic_page_data_del(Comic_Page *cp);
