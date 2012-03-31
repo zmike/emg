@@ -458,13 +458,18 @@ batoto_comic_page_data_cb(Comic_Page *cp)
         index_start = p;
         cp->idx[1] = 1;
       case 1:
-        p = strstr(index_start, "</li");
-        if (!p)
+        if (index_start[14] == 'p')
+          p = index_start - 1;
+        else
           {
-             cp->idx[0] = size;
-             return;
+             p = strstr(index_start, "</li");
+             if (!p)
+               {
+                  cp->idx[0] = size;
+                  return;
+               }
+             cp->idx[0] = p - data;
           }
-        cp->idx[0] = p - data;
         cp->idx[1] = 2;
         index_start = p;
       case 2:
