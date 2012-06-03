@@ -414,7 +414,7 @@ main(int argc, char *argv[])
    evas_object_resize(win, 640, 712);
    elm_win_center(win, EINA_TRUE, EINA_TRUE);
 
-//   e.search_providers = eina_list_append(e.search_providers, mangapanda_search_init_cb);
+   e.search_providers = eina_list_append(e.search_providers, mangapanda_search_init_cb);
    e.search_providers = eina_list_append(e.search_providers, batoto_search_init_cb);
    e.update_providers = eina_list_append(e.update_providers, mangaupdates_update_init_cb);
    e.update_providers = eina_list_append(e.update_providers, batoto_update_init_cb);
