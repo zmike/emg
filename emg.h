@@ -435,7 +435,7 @@ void update_result_item_result_del(Update_Result *ur);
 void update_result_item_update(Update_Result *ur);
 
 Comic_Provider *batoto_search_init_cb(void);
-Comic_Provider *mangareader_search_init_cb(void);
+Comic_Provider *mangapanda_search_init_cb(void);
 Comic_Provider *mangaupdates_update_init_cb(void);
 Comic_Provider *batoto_update_init_cb(void);
 

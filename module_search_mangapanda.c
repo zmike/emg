@@ -1,81 +1,81 @@
-#include "module_search_mangareader.h"
+#include "module_search_mangapanda.h"
 
-static void mangareader_search_name_cb(Search_Name *sn);
-static void mangareader_comic_series_data_cb2(Comic_Series_Data *csd);
-static void mangareader_comic_series_data_cb(Comic_Series_Data *csd);
-static void mangareader_comic_page_data_cb(Comic_Page *cp);
-static Comic_Provider *mangareader_comic_page_init_cb(void);
-static Comic_Provider *mangareader_series_init_cb(void);
+static void mangapanda_search_name_cb(Search_Name *sn);
+static void mangapanda_comic_series_data_cb2(Comic_Series_Data *csd);
+static void mangapanda_comic_series_data_cb(Comic_Series_Data *csd);
+static void mangapanda_comic_page_data_cb(Comic_Page *cp);
+static Comic_Provider *mangapanda_comic_page_init_cb(void);
+static Comic_Provider *mangapanda_series_init_cb(void);
 
 static Comic_Provider search_provider =
 {
-   .url = MANGAREADER_URL,
-   .search_url = MANGAREADER_SEARCH_URL,
-   .priority = MANGAREADER_PROVIDER_PRIORITY,
-   .search_index = MANGAREADER_SEARCH_INDEX,
-   .search_name_count = MANGAREADER_SEARCH_INDEX_NAME_COUNT,
-   .index_start[0] = MANGAREADER_SEARCH_INDEX_START,
-   .index_char[0] = MANGAREADER_SEARCH_INDEX_START_CHAR,
-   .index_start[1] = MANGAREADER_SEARCH_INDEX_POST_IMAGE,
-   .index_char[1] = MANGAREADER_SEARCH_INDEX_POST_IMAGE_CHAR,
-   .index_start[2] = MANGAREADER_SEARCH_INDEX_POST_HREF,
-   .index_char[2] = MANGAREADER_SEARCH_INDEX_POST_HREF_CHAR,
-   .index_start[3] = MANGAREADER_SEARCH_INDEX_CHAP,
-   .index_char[3] = MANGAREADER_SEARCH_INDEX_CHAP_CHAR,
-   .index_start[4] = MANGAREADER_SEARCH_INDEX_TAGS,
-   .index_char[4] = MANGAREADER_SEARCH_INDEX_TAGS_CHAR,
-   .index_start[5] = MANGAREADER_SEARCH_INDEX_END,
-   .index_char[5] = MANGAREADER_SEARCH_INDEX_END_CHAR,
-   .replace_str = MANGAREADER_REPLACE_STR,
-   .data_cb = MANGAREADER_DATA_CB,
-   .init_cb = MANGAREADER_INIT_CB
+   .url = MANGAPANDA_URL,
+   .search_url = MANGAPANDA_SEARCH_URL,
+   .priority = MANGAPANDA_PROVIDER_PRIORITY,
+   .search_index = MANGAPANDA_SEARCH_INDEX,
+   .search_name_count = MANGAPANDA_SEARCH_INDEX_NAME_COUNT,
+   .index_start[0] = MANGAPANDA_SEARCH_INDEX_START,
+   .index_char[0] = MANGAPANDA_SEARCH_INDEX_START_CHAR,
+   .index_start[1] = MANGAPANDA_SEARCH_INDEX_POST_IMAGE,
+   .index_char[1] = MANGAPANDA_SEARCH_INDEX_POST_IMAGE_CHAR,
+   .index_start[2] = MANGAPANDA_SEARCH_INDEX_POST_HREF,
+   .index_char[2] = MANGAPANDA_SEARCH_INDEX_POST_HREF_CHAR,
+   .index_start[3] = MANGAPANDA_SEARCH_INDEX_CHAP,
+   .index_char[3] = MANGAPANDA_SEARCH_INDEX_CHAP_CHAR,
+   .index_start[4] = MANGAPANDA_SEARCH_INDEX_TAGS,
+   .index_char[4] = MANGAPANDA_SEARCH_INDEX_TAGS_CHAR,
+   .index_start[5] = MANGAPANDA_SEARCH_INDEX_END,
+   .index_char[5] = MANGAPANDA_SEARCH_INDEX_END_CHAR,
+   .replace_str = MANGAPANDA_REPLACE_STR,
+   .data_cb = MANGAPANDA_DATA_CB,
+   .init_cb = MANGAPANDA_INIT_CB
 };
 
 static Comic_Provider series_provider =
 {
-   .url = MANGAREADER_URL,
-   .priority = MANGAREADER_PROVIDER_PRIORITY,
-   .search_index = MANGAREADER_SERIES_INDEX,
-   .index_start[0] = MANGAREADER_SERIES_INDEX_START,
-   .index_char[0] = MANGAREADER_SERIES_INDEX_START_CHAR,
-   .index_start[1] = MANGAREADER_SERIES_INDEX_POST_IMAGE,
-   .index_char[1] = MANGAREADER_SERIES_INDEX_POST_IMAGE_CHAR,
-   .index_start[2] = MANGAREADER_SERIES_INDEX_ALT_NAME,
-   .index_char[2] = MANGAREADER_SERIES_INDEX_ALT_NAME_CHAR,
-   .index_start[3] = MANGAREADER_SERIES_INDEX_YEAR,
-   .index_char[3] = MANGAREADER_SERIES_INDEX_YEAR_CHAR,
-   .index_start[4] = MANGAREADER_SERIES_INDEX_COMPLETED,
-   .index_char[4] = MANGAREADER_SERIES_INDEX_COMPLETED_CHAR,
-   .index_start[5] = MANGAREADER_SERIES_INDEX_AUTHOR,
-   .index_char[5] = MANGAREADER_SERIES_INDEX_AUTHOR_CHAR,
-   .index_start[6] = MANGAREADER_SERIES_INDEX_ARTIST,
-   .index_char[6] = MANGAREADER_SERIES_INDEX_ARTIST_CHAR,
-   .index_start[7] = MANGAREADER_SERIES_INDEX_JUMP,
-   .index_char[7] = MANGAREADER_SERIES_INDEX_JUMP_CHAR,
-   .data_cb = (Provider_Data_Cb)mangareader_comic_series_data_cb,
-   .init_cb = (Provider_Init_Cb)mangareader_comic_page_init_cb
+   .url = MANGAPANDA_URL,
+   .priority = MANGAPANDA_PROVIDER_PRIORITY,
+   .search_index = MANGAPANDA_SERIES_INDEX,
+   .index_start[0] = MANGAPANDA_SERIES_INDEX_START,
+   .index_char[0] = MANGAPANDA_SERIES_INDEX_START_CHAR,
+   .index_start[1] = MANGAPANDA_SERIES_INDEX_POST_IMAGE,
+   .index_char[1] = MANGAPANDA_SERIES_INDEX_POST_IMAGE_CHAR,
+   .index_start[2] = MANGAPANDA_SERIES_INDEX_ALT_NAME,
+   .index_char[2] = MANGAPANDA_SERIES_INDEX_ALT_NAME_CHAR,
+   .index_start[3] = MANGAPANDA_SERIES_INDEX_YEAR,
+   .index_char[3] = MANGAPANDA_SERIES_INDEX_YEAR_CHAR,
+   .index_start[4] = MANGAPANDA_SERIES_INDEX_COMPLETED,
+   .index_char[4] = MANGAPANDA_SERIES_INDEX_COMPLETED_CHAR,
+   .index_start[5] = MANGAPANDA_SERIES_INDEX_AUTHOR,
+   .index_char[5] = MANGAPANDA_SERIES_INDEX_AUTHOR_CHAR,
+   .index_start[6] = MANGAPANDA_SERIES_INDEX_ARTIST,
+   .index_char[6] = MANGAPANDA_SERIES_INDEX_ARTIST_CHAR,
+   .index_start[7] = MANGAPANDA_SERIES_INDEX_JUMP,
+   .index_char[7] = MANGAPANDA_SERIES_INDEX_JUMP_CHAR,
+   .data_cb = (Provider_Data_Cb)mangapanda_comic_series_data_cb,
+   .init_cb = (Provider_Init_Cb)mangapanda_comic_page_init_cb
 };
 
 static Comic_Provider page_provider =
 {
-   .url = MANGAREADER_URL,
-   .priority = MANGAREADER_PROVIDER_PRIORITY,
-   .search_index = MANGAREADER_PAGE_INDEX,
-   .index_start[0] = MANGAREADER_PAGE_INDEX_START,
-   .index_char[0] = MANGAREADER_PAGE_INDEX_START_CHAR,
-   .index_start[1] = MANGAREADER_PAGE_INDEX_JUMP,
-   .index_char[1] = MANGAREADER_PAGE_INDEX_JUMP_CHAR,
-   .index_start[2] = MANGAREADER_PAGE_INDEX_NEXT,
-   .index_char[2] = MANGAREADER_PAGE_INDEX_NEXT_CHAR,
-   .index_start[3] = MANGAREADER_PAGE_INDEX_PREV,
-   .index_char[3] = MANGAREADER_PAGE_INDEX_PREV_CHAR,
-   .index_start[4] = MANGAREADER_PAGE_INDEX_IMG,
-   .index_char[4] = MANGAREADER_PAGE_INDEX_IMG_CHAR,
-   .data_cb = (Provider_Data_Cb)mangareader_comic_page_data_cb
+   .url = MANGAPANDA_URL,
+   .priority = MANGAPANDA_PROVIDER_PRIORITY,
+   .search_index = MANGAPANDA_PAGE_INDEX,
+   .index_start[0] = MANGAPANDA_PAGE_INDEX_START,
+   .index_char[0] = MANGAPANDA_PAGE_INDEX_START_CHAR,
+   .index_start[1] = MANGAPANDA_PAGE_INDEX_JUMP,
+   .index_char[1] = MANGAPANDA_PAGE_INDEX_JUMP_CHAR,
+   .index_start[2] = MANGAPANDA_PAGE_INDEX_NEXT,
+   .index_char[2] = MANGAPANDA_PAGE_INDEX_NEXT_CHAR,
+   .index_start[3] = MANGAPANDA_PAGE_INDEX_PREV,
+   .index_char[3] = MANGAPANDA_PAGE_INDEX_PREV_CHAR,
+   .index_start[4] = MANGAPANDA_PAGE_INDEX_IMG,
+   .index_char[4] = MANGAPANDA_PAGE_INDEX_IMG_CHAR,
+   .data_cb = (Provider_Data_Cb)mangapanda_comic_page_data_cb
 };
 
 static void
-mangareader_search_name_cb(Search_Name *sn)
+mangapanda_search_name_cb(Search_Name *sn)
 {
    const char *data;
    size_t size;
@@ -192,7 +192,7 @@ mangareader_search_name_cb(Search_Name *sn)
 
 
 static void
-mangareader_comic_series_data_cb2(Comic_Series_Data *csd)
+mangapanda_comic_series_data_cb2(Comic_Series_Data *csd)
 {
    const char *base, *buf;
    char *p;
@@ -260,7 +260,7 @@ mangareader_comic_series_data_cb2(Comic_Series_Data *csd)
 }
 
 static void
-mangareader_comic_series_data_cb(Comic_Series_Data *csd)
+mangapanda_comic_series_data_cb(Comic_Series_Data *csd)
 {
    const char *data;
    size_t size;
@@ -268,7 +268,7 @@ mangareader_comic_series_data_cb(Comic_Series_Data *csd)
    data = eina_strbuf_string_get(csd->buf);
    size = eina_strbuf_length_get(csd->buf);
    if ((!csd->idx[0]) && (!csd->idx[1]))
-     csd->idx[0] = csd->provider->search_index + (MANGAREADER_SERIES_INDEX_NAME_COUNT * csd->cs->namelen);
+     csd->idx[0] = csd->provider->search_index + (MANGAPANDA_SERIES_INDEX_NAME_COUNT * csd->cs->namelen);
    //DBG("(idx=%u,size=%d)", csd->idx[0], size);
    /* discard unneeded bytes, hooray */
    for (; (csd->idx[1] < sizeof(csd->provider->index_start)) && (csd->provider->index_start[csd->idx[1]] || csd->provider->index_char[csd->idx[1]]); csd->idx[1]++)
@@ -277,7 +277,7 @@ mangareader_comic_series_data_cb(Comic_Series_Data *csd)
         unsigned int jump = 0;
 
         //DBG("(idx=%u,size=%d)", csd->idx[0], size);
-        if (csd->idx[1] == 1) jump = MANGAREADER_SERIES_INDEX_POST_IMAGE_NAME_COUNT * csd->cs->namelen;
+        if (csd->idx[1] == 1) jump = MANGAPANDA_SERIES_INDEX_POST_IMAGE_NAME_COUNT * csd->cs->namelen;
         if (csd->idx[0] + csd->provider->index_start[csd->idx[1]] + jump > size)
           {
              /*
@@ -332,7 +332,7 @@ mangareader_comic_series_data_cb(Comic_Series_Data *csd)
            case 6:
              break;
            default:
-             mangareader_comic_series_data_cb2(csd);
+             mangapanda_comic_series_data_cb2(csd);
              return;
           }
         csd->idx[0] = p - data;
@@ -340,7 +340,7 @@ mangareader_comic_series_data_cb(Comic_Series_Data *csd)
 }
 
 static void
-mangareader_comic_page_data_cb(Comic_Page *cp)
+mangapanda_comic_page_data_cb(Comic_Page *cp)
 {
    const char *data;
    size_t size;
@@ -350,7 +350,7 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
    size = eina_strbuf_length_get(cp->buf);
    if ((!cp->idx[0]) && (!cp->idx[1]))
      {
-          cp->idx[0] = cp->provider->search_index + (MANGAREADER_PAGE_INDEX_NAME_COUNT * cp->cc->csd->cs->namelen);
+          cp->idx[0] = cp->provider->search_index + (MANGAPANDA_PAGE_INDEX_NAME_COUNT * cp->cc->csd->cs->namelen);
         if (cp->cc->number > 9)
           cp->idx[0] += 8;
         if (cp->cc->number > 99)
@@ -398,6 +398,7 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
            case 3:
              {
                 Comic_Page *cn;
+                Comic_Chapter *cc = NULL;
                 const char *pp, *ppp;
                 unsigned int cnum = 0, pnum = 0;
 
@@ -429,11 +430,9 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
                      cnum = strtoul(pp + 1, NULL, 10);
                   }
                 if (cnum == cp->cc->number)
-                  cn = comic_page_new(cp->cc, pnum ?: 1);
+                  cc = cp->cc;
                 else
                   {
-                     Comic_Chapter *cc;
-
                      if (cp->idx[1] == 2)
                        {
                           cc = comic_chapter_next_get(cp->cc);
@@ -456,26 +455,33 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
                                if (cci) cc = comic_chapter_item_match(cci, cp->cc->provider);
                             }
                        }
-                     if (!cc)
-                       {
-                          /* no more chapters available in this direction, shouldn't get here */
-                          break;
-                       }
-                     cn = comic_page_new(cc, pnum ?: 1);
+                  }
+                if (!cc)
+                  {
+                     /* no more chapters available in this direction, shouldn't get here */
+                     break;
                   }
                 {
                    char *buf;
+                   const char *href;
+                   Comic_Page *ctest;
                    buf = strndupa(index_start, p - index_start);
-                   cn->href = eina_stringshare_printf("%s%s", cn->provider->url, buf);
+                   href = eina_stringshare_printf("%s%s", cp->provider->url, buf);
+                   ctest = comic_page_prev_get(cp);
+                   if (ctest && (href == ctest->href))
+                     {
+                        /* duplicate page */
+                        eina_stringshare_del(href);
+                        break;
+                     }
+                   cn = comic_page_new(cc, pnum ?: 1);
+                   cn->href = href;
                 }
              }
              break;
            case 4: /* actual page image */
-             if (p - index_start > 1)
-               cp->image.href = eina_stringshare_add_length(index_start, p - index_start);
-             else
                {
-                  /* FIXME: this is super slow by comparison */
+                  /* FIXME: this is probably super slow */
                   const char *pp;
 
                   if (size <= 5100) return;
@@ -499,19 +505,19 @@ mangareader_comic_page_data_cb(Comic_Page *cp)
 }
 
 static Comic_Provider *
-mangareader_comic_page_init_cb(void)
+mangapanda_comic_page_init_cb(void)
 {
    return &page_provider;
 }
 
 static Comic_Provider *
-mangareader_series_init_cb(void)
+mangapanda_series_init_cb(void)
 {
    return &series_provider;
 }
 
 Comic_Provider *
-mangareader_search_init_cb(void)
+mangapanda_search_init_cb(void)
 {
    return &search_provider;
 }

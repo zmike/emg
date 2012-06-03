@@ -199,7 +199,7 @@ search_list_pic_cb(Search_Result_Item *sri, Evas_Object *obj, const char *part)
 
    if (strcmp(part, "elm.swallow.end")) return NULL;
    if ((!sri->image) || (!sri->image->buf)) return NULL;
-   DBG("%s", sri->name);
+   DBG("SEARCH RESULT IMAGE: %s", sri->name);
    ic = elm_icon_add(obj);
    evas_object_size_hint_aspect_set(ic, EVAS_ASPECT_CONTROL_VERTICAL, 1, 1);
    elm_icon_memfile_set(ic, eina_binbuf_string_get(sri->image->buf), eina_binbuf_length_get(sri->image->buf), NULL, NULL);
