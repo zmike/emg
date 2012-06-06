@@ -424,6 +424,8 @@ batoto_comic_series_data_cb(Comic_Series_Data *csd)
      }
 }
 
+#define IF_DONE_ABORT(X) do { if (X) { if (cp->ecu) return; abort(); } } while (0)
+
 static void
 batoto_comic_page_data_cb(Comic_Page *cp)
 {
@@ -451,7 +453,7 @@ batoto_comic_page_data_cb(Comic_Page *cp)
                   return;
                }
              cp->idx[0] = p - data;
-             if (size <= cp->idx[0] + 1) abort();
+             IF_DONE_ABORT(size <= cp->idx[0] + 1);
              cp->idx[0]++;
              index_start = data + cp->idx[0];
           }
@@ -475,7 +477,7 @@ batoto_comic_page_data_cb(Comic_Page *cp)
       case 2:
         if (cp->idx[0] + 6300 >= size) return;
         index_start = strchr(index_start + 1, '<');
-        if (!index_start) abort();
+        IF_DONE_ABORT(!index_start);
         if (index_start[1] != 's')
           {
              cp->idx[1] = 5;
@@ -483,7 +485,7 @@ batoto_comic_page_data_cb(Comic_Page *cp)
              return;
           }
         index_start += 90;
-        if (index_start[0] != '<') abort(); /* FIXME */
+        IF_DONE_ABORT(index_start[0] != '<'); /* FIXME */
         cp->idx[0] = index_start - data;
         cp->idx[1] = 3;
       case 3:
@@ -520,7 +522,7 @@ batoto_comic_page_data_cb(Comic_Page *cp)
                        index_start = p + 2;
                     }
                   p = strchr(index_start + 1, '>');
-                  if (!p) abort(); /* FIXME */
+                  IF_DONE_ABORT(!p); /* FIXME */
                   if (p[1] != '<')
                     {
                        cp->idx[1] = 4;
@@ -544,10 +546,10 @@ batoto_comic_page_data_cb(Comic_Page *cp)
                   ccp = comic_chapter_prev_get(cp->cc);
                   if (!ccp) break; /* already have this url or no previous ch */
                   p = strstr(index_start + 200, "</li");
-                  if (!p) abort(); /* FIXME */
+                  IF_DONE_ABORT(!p); /* FIXME */
                   index_start = p + 110;
                   p = strchr(index_start, '"');
-                  if (!p) abort(); /* FIXME */
+                  IF_DONE_ABORT(!p); /* FIXME */
                   cpp = comic_page_new(ccp, 999);
                   cpp->href = eina_stringshare_add_length(index_start, p - index_start);
                }
@@ -578,13 +580,13 @@ batoto_comic_page_data_cb(Comic_Page *cp)
       case 5:
         index_start += 1400, cp->idx[0] += 1400;
         p = strstr(index_start, "15p");
-        if (!p) abort(); /* FIXME */
+        IF_DONE_ABORT(!p); /* FIXME */
         index_start = p + 2;
         for (; index_start[5] == '<'; index_start = strchr(p, '<'))
           {
              index_start += 15;
              p = strchr(index_start, '\'');
-             if (!p) abort(); /* FIXME */
+             IF_DONE_ABORT(!p); /* FIXME */
              if (cp->image.href)
                {
                   Comic_Page *cpn;
