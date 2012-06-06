@@ -47,6 +47,10 @@ comic_view_show(EMG *e, Evas_Object *obj __UNUSED__, Elm_Object_Item *event_info
       1 | evas_object_key_grab(e->win, "KP_Left", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
       1 | evas_object_key_grab(e->win, "Right", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
       1 | evas_object_key_grab(e->win, "Left", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+      1 | evas_object_key_grab(e->win, "F1", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+      1 | evas_object_key_grab(e->win, "F2", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+      1 | evas_object_key_grab(e->win, "F3", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+      1 | evas_object_key_grab(e->win, "F4", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
    }
    e->view = EMG_VIEW_READER;
 }

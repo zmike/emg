@@ -279,18 +279,37 @@ window_key(void *data __UNUSED__, Evas *evas __UNUSED__, Evas_Object *obj __UNUS
           comic_view_page_next(&e, NULL, NULL);
         break;
       case EMG_VIEW_SERIES:
+        if (strcmp(ev->keyname, "Return") && strcmp(ev->keyname, "KP_Enter")) break;
         it = elm_genlist_selected_item_get(e.sv.list);
         if (!it) return;
         comic_view_chapter_set(&e, elm_object_item_data_get(it));
         comic_view_show(&e, NULL, NULL);
         break;
       case EMG_VIEW_SEARCH:
+        if (strcmp(ev->keyname, "Return") && strcmp(ev->keyname, "KP_Enter")) break;
         it = elm_genlist_selected_item_get(e.sw.list);
         if (it)
           search_result_pick(&e, NULL, it);
         else
           search_name_create(&e, NULL, NULL);
       default:
+        break;
+     }
+   if (ev->keyname[0] != 'F') return;
+   switch (ev->keyname[1])
+     {
+      case '1':
+        update_view_show(&e, NULL, NULL);
+        break;
+      case '2':
+        search_view_show(&e, NULL, NULL);
+        break;
+      case '3':
+        series_view_show(&e, NULL, NULL);
+        break;
+      case '4':
+        default:
+        comic_view_show(&e, NULL, NULL);
         break;
      }
 }
@@ -408,6 +427,10 @@ main(int argc, char *argv[])
       alt = evas_key_modifier_mask_get(evas, "Alt");
       1 | evas_object_key_grab(win, "Return", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
       1 | evas_object_key_grab(win, "KP_Enter", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+      1 | evas_object_key_grab(win, "F1", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+      1 | evas_object_key_grab(win, "F2", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+      1 | evas_object_key_grab(win, "F3", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
+      1 | evas_object_key_grab(win, "F4", 0, ctrl | shift | alt, 1); /* worst warn_unused ever. */
    }
 
    elm_win_screen_constrain_set(win, EINA_TRUE);
@@ -415,7 +438,7 @@ main(int argc, char *argv[])
    elm_win_center(win, EINA_TRUE, EINA_TRUE);
 
    e.search_providers = eina_list_append(e.search_providers, mangapanda_search_init_cb);
-//   e.search_providers = eina_list_append(e.search_providers, batoto_search_init_cb);
+   e.search_providers = eina_list_append(e.search_providers, batoto_search_init_cb);
    e.update_providers = eina_list_append(e.update_providers, mangaupdates_update_init_cb);
    e.update_providers = eina_list_append(e.update_providers, batoto_update_init_cb);
    update_view_show(&e, NULL, NULL);
