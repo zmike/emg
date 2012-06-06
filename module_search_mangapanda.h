@@ -50,6 +50,7 @@
 #define MANGAPANDA_PAGE_INDEX_PREV_CHAR '\''
 #define MANGAPANDA_PAGE_INDEX_IMG 25
 #define MANGAPANDA_PAGE_INDEX_IMG_CHAR '\''
+#define MANGAPANDA_PAGE_HEADER_CB mangapanda_comic_page_header_cb
 
 #define MANGAPANDA_REPLACE_STR "+"
 

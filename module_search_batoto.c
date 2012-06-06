@@ -29,7 +29,7 @@ static Comic_Provider search_provider =
    .index_char[6] = BATOTO_SEARCH_INDEX_END_CHAR,
    .replace_str = BATOTO_REPLACE_STR,
    .data_cb = BATOTO_DATA_CB,
-   .init_cb = BATOTO_INIT_CB
+   .info_cb.init_cb = BATOTO_INIT_CB
 };
 
 static Comic_Provider series_provider =
@@ -54,7 +54,7 @@ static Comic_Provider series_provider =
    .index_start[7] = BATOTO_SERIES_INDEX_DESC,
    .index_char[7] = BATOTO_SERIES_INDEX_DESC_CHAR,
    .data_cb = (Provider_Data_Cb)batoto_comic_series_data_cb,
-   .init_cb = (Provider_Init_Cb)batoto_comic_page_init_cb
+   .info_cb.init_cb = (Provider_Init_Cb)batoto_comic_page_init_cb
 };
 
 static Comic_Provider page_provider =

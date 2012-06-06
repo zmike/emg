@@ -35,7 +35,7 @@ comic_page_new(Comic_Chapter *cc, unsigned int id)
      }
    if (!in)
      cc->pages = eina_inlist_append(cc->pages, EINA_INLIST_GET(cp));
-   cp->provider = cc->provider->init_cb();
+   cp->provider = cc->provider->info_cb.init_cb();
    return cp;
 }
 
@@ -51,6 +51,7 @@ comic_page_fetch(Comic_Page *cp)
      {
         cp->image.ecu = ecu = ecore_con_url_new(cp->image.href);
         ecore_con_url_data_set(cp->image.ecu, &cp->image);
+        if (cp->provider->info_cb.header_cb) cp->provider->info_cb.header_cb(cp);
      }
    else
      {

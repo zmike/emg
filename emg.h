@@ -59,7 +59,6 @@ typedef struct Update_Result_Item Update_Result_Item;
 typedef void (*Provider_Data_Cb)(void *);
 typedef Comic_Provider *(*Provider_Init_Cb)(void);
 
-
 typedef enum EMG_View
 {
    EMG_VIEW_UPDATES,
@@ -158,7 +157,11 @@ struct Comic_Provider
    char index_char[10];
    char *replace_str; /* string to replace ' ' with */
    Provider_Data_Cb data_cb; /* parser cb */
-   Provider_Init_Cb init_cb; /* init cb for subclass */
+   union
+   {
+      Provider_Init_Cb init_cb; /* init cb for subclass */
+      Provider_Data_Cb header_cb; /* cb to add headers before sending */
+   } info_cb;
 };
 
 struct Update

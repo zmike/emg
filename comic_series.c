@@ -37,7 +37,7 @@ comic_series_new(Search_Result_Item *sri)
         csd = calloc(1, sizeof(Comic_Series_Data));
         csd->identifier = IDENTIFIER_COMIC_SERIES_DATA;
         csd->cs = cs;
-        csd->provider = sr->provider->init_cb();
+        csd->provider = sr->provider->info_cb.init_cb();
         csd->image.identifier = IDENTIFIER_COMIC_SERIES_IMAGE;
         csd->image.parent = csd;
         csd->ecu = ecore_con_url_new(sr->href);

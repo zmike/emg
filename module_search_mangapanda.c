@@ -3,6 +3,7 @@
 static void mangapanda_search_name_cb(Search_Name *sn);
 static void mangapanda_comic_series_data_cb2(Comic_Series_Data *csd);
 static void mangapanda_comic_series_data_cb(Comic_Series_Data *csd);
+static void mangapanda_comic_page_header_cb(Comic_Page *cp);
 static void mangapanda_comic_page_data_cb(Comic_Page *cp);
 static Comic_Provider *mangapanda_comic_page_init_cb(void);
 static Comic_Provider *mangapanda_series_init_cb(void);
@@ -28,7 +29,7 @@ static Comic_Provider search_provider =
    .index_char[5] = MANGAPANDA_SEARCH_INDEX_END_CHAR,
    .replace_str = MANGAPANDA_REPLACE_STR,
    .data_cb = MANGAPANDA_DATA_CB,
-   .init_cb = MANGAPANDA_INIT_CB
+   .info_cb.init_cb = MANGAPANDA_INIT_CB
 };
 
 static Comic_Provider series_provider =
@@ -53,7 +54,7 @@ static Comic_Provider series_provider =
    .index_start[7] = MANGAPANDA_SERIES_INDEX_JUMP,
    .index_char[7] = MANGAPANDA_SERIES_INDEX_JUMP_CHAR,
    .data_cb = (Provider_Data_Cb)mangapanda_comic_series_data_cb,
-   .init_cb = (Provider_Init_Cb)mangapanda_comic_page_init_cb
+   .info_cb.init_cb = (Provider_Init_Cb)mangapanda_comic_page_init_cb
 };
 
 static Comic_Provider page_provider =
@@ -71,6 +72,7 @@ static Comic_Provider page_provider =
    .index_char[3] = MANGAPANDA_PAGE_INDEX_PREV_CHAR,
    .index_start[4] = MANGAPANDA_PAGE_INDEX_IMG,
    .index_char[4] = MANGAPANDA_PAGE_INDEX_IMG_CHAR,
+   .info_cb.header_cb = (Provider_Data_Cb)mangapanda_comic_page_header_cb,
    .data_cb = (Provider_Data_Cb)mangapanda_comic_page_data_cb
 };
 
@@ -337,6 +339,12 @@ mangapanda_comic_series_data_cb(Comic_Series_Data *csd)
           }
         csd->idx[0] = p - data;
      }
+}
+
+static void
+mangapanda_comic_page_header_cb(Comic_Page *cp)
+{
+   ecore_con_url_additional_header_add(cp->image.ecu, "Cookie", "__utma=1.1500426971.1338972157.1338972157.1338972157.1; __utmb=1.3.10.1338972157; __utmc=1; __utmz=1.1338972157.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none)");
 }
 
 static void
