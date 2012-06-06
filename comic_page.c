@@ -96,6 +96,7 @@ comic_page_parser(Comic_Page *cp)
 Comic_Page *
 comic_page_prev_get(Comic_Page *cp)
 {
+   if (!cp) return NULL;
    if (!EINA_INLIST_GET(cp)->prev)
      {
         Comic_Chapter_Item *cci;
@@ -111,6 +112,7 @@ comic_page_prev_get(Comic_Page *cp)
 Comic_Page *
 comic_page_next_get(Comic_Page *cp)
 {
+   if (!cp) return NULL;
    if (!EINA_INLIST_GET(cp)->next)
      {
         Comic_Chapter_Item *cci;
