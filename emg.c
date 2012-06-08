@@ -314,27 +314,6 @@ window_key(void *data __UNUSED__, Evas *evas __UNUSED__, Evas_Object *obj __UNUS
      }
 }
 
-static void
-_win_del(void *data __UNUSED__, Evas_Object *obj __UNUSED__, void *event_info __UNUSED__)
-{
-   if (e.cv.cci)
-     {
-        Elm_Object_Item *it;
-        Eina_List *l;
-
-        l = elm_naviframe_items_get(e.cv.nf);
-
-        EINA_LIST_FREE(l, it)
-          {
-             elm_object_item_part_content_unset(it, "btn_prev");
-             elm_object_item_part_content_unset(it, "btn_next");
-          }
-     }
-   evas_object_unref(e.cv.prev);
-   evas_object_unref(e.cv.next);
-   ecore_main_loop_quit();
-}
-
 int
 main(int argc, char *argv[])
 {
@@ -354,7 +333,6 @@ main(int argc, char *argv[])
 
    /* image win */
    e.win = win = elm_win_add(NULL, NULL, ELM_WIN_BASIC);
-   evas_object_smart_callback_add(win, "delete,request", _win_del, NULL);
    elm_win_autodel_set(win, EINA_TRUE);
    elm_win_screen_constrain_set(win, EINA_TRUE);
 
@@ -441,7 +419,7 @@ main(int argc, char *argv[])
    e.search_providers = eina_list_append(e.search_providers, batoto_search_init_cb);
    e.update_providers = eina_list_append(e.update_providers, mangaupdates_update_init_cb);
    e.update_providers = eina_list_append(e.update_providers, batoto_update_init_cb);
-   update_view_show(&e, NULL, NULL);
+   search_view_show(&e, NULL, NULL);
    updates_poll(&e);
 
    elm_run();

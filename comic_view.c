@@ -84,8 +84,8 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
 {
    char *buf;
    size_t size;
-   Evas_Object *next, *prev;
-   Comic_Page *cpn, *cpp = NULL;
+   Evas_Object *next = NULL, *prev = NULL, *ic;
+   Comic_Page *cpn = NULL, *cpp = NULL;
    int x;
 
    cp->cc->current = cp;
@@ -134,11 +134,33 @@ comic_view_page_set(EMG *e, Comic_Page *cp)
      snprintf(buf, size, "%s %d%s%s - %u", cp->cc->csd->cs->name, (int)cp->cc->number, cp->cc->name ? ": " : "", cp->cc->name ?: "", cp->number);
    cpn = comic_page_next_get(cp);
    cpp = comic_page_prev_get(cp);
-   next = cpn ? e->cv.next : NULL;
-   prev = cpp ? e->cv.prev : NULL;
+
+   if (cpn)
+     {
+        next = elm_button_add(e->win);
+        FILL(next);
+        ic = elm_icon_add(e->win);
+        FILL(ic);
+        elm_icon_standard_set(ic, "go-next");
+        evas_object_show(ic);
+        elm_object_part_content_set(next, "icon", ic);
+        evas_object_smart_callback_add(next, "clicked", (Evas_Smart_Cb)comic_view_page_next, e);
+     }
+   if (cpp)
+     {
+        prev = elm_button_add(e->win);
+        FILL(prev);
+        ic = elm_icon_add(e->win);
+        FILL(ic);
+        elm_icon_standard_set(ic, "go-previous");
+        evas_object_show(ic);
+        elm_object_part_content_set(prev, "icon", ic);
+        evas_object_smart_callback_add(prev, "clicked", (Evas_Smart_Cb)comic_view_page_prev, e);
+     }
+
    INF("PREV PAGE: %u; CURRENT PAGE: %u; NEXT PAGE: %u", prev ? (cpp->number) : 0, cp->number, next ? (cpn->number) : 0);
    cp->nf_it = elm_naviframe_item_push(e->cv.nf, buf, prev, next, cp->scr, NULL);
-   elm_object_focus_set(e->cv.next, EINA_TRUE);
+   if (next) elm_object_focus_set(next, EINA_TRUE);
    evas_object_show(cp->obj);
    if (cpn) ecore_job_add((Ecore_Cb)comic_view_image_create, cpn);
 }
@@ -190,30 +212,9 @@ comic_view_page_next(EMG *e, Evas_Object *obj __UNUSED__, void *event_info __UNU
 void
 comic_view_create(EMG *e, Evas_Object *win)
 {
-   Evas_Object *ic;
    e->cv.nf = elm_naviframe_add(win);
    EXPAND(e->cv.nf);
    FILL(e->cv.nf);
    e->cv.nf_it = elm_naviframe_item_simple_push(e->nf, e->cv.nf);
    evas_object_show(e->cv.nf);
-
-   e->cv.prev = elm_button_add(win);
-   evas_object_ref(e->cv.prev);
-   FILL(e->cv.prev);
-   ic = elm_icon_add(win);
-   FILL(ic);
-   elm_icon_standard_set(ic, "go-previous");
-   evas_object_show(ic);
-   elm_object_part_content_set(e->cv.prev, "icon", ic);
-   evas_object_smart_callback_add(e->cv.prev, "clicked", (Evas_Smart_Cb)comic_view_page_prev, &e);
-
-   e->cv.next = elm_button_add(win);
-   evas_object_ref(e->cv.next);
-   FILL(e->cv.next);
-   ic = elm_icon_add(win);
-   FILL(ic);
-   elm_icon_standard_set(ic, "go-next");
-   evas_object_show(ic);
-   elm_object_part_content_set(e->cv.next, "icon", ic);
-   evas_object_smart_callback_add(e->cv.next, "clicked", (Evas_Smart_Cb)comic_view_page_next, &e);
 }

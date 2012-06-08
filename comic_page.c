@@ -77,12 +77,7 @@ comic_page_data_del(Comic_Page *cp)
 void
 comic_page_image_del(Comic_Page *cp)
 {
-    if (cp->nf_it)
-      {
-         elm_object_item_part_content_unset(cp->nf_it, "btn_prev");
-         elm_object_item_part_content_unset(cp->nf_it, "btn_next");
-         elm_object_item_del(cp->nf_it);
-      }
+    if (cp->nf_it) elm_object_item_del(cp->nf_it);
     cp->obj = cp->scr = NULL;
     cp->nf_it = NULL;
 }
