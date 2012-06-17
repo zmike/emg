@@ -69,7 +69,7 @@ comic_view_image_create(Comic_Page *cp)
 {
    EMG *e = cp->cc->csd->cs->e;
    if (cp->obj) return;
-   cp->obj = elm_icon_add(e->win);
+   cp->obj = elm_icon_add(e->cv.nf);
    EXPAND(cp->obj);
    ALIGN(cp->obj, 0.5, 0);
    elm_icon_animated_set(cp->obj, EINA_TRUE);
@@ -77,6 +77,7 @@ comic_view_image_create(Comic_Page *cp)
    elm_icon_aspect_fixed_set(cp->obj, EINA_TRUE);
    elm_icon_fill_outside_set(cp->obj, EINA_FALSE);
    comic_view_image_update(cp);
+   evas_object_hide(cp->obj);
 }
 
 void
